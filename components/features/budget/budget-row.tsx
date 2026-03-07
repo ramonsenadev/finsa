@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { getIconComponent } from "@/components/features/categories/icon-picker";
 
 interface CategoryRow {
   id: string;
@@ -59,7 +60,10 @@ export function BudgetRow({ category, onBudgetChange, isPending }: BudgetRowProp
     <div className="grid grid-cols-[1fr_140px_180px_1fr] items-center gap-4 border-b border-border px-4 py-3 last:border-b-0">
       {/* Category name */}
       <div className="flex items-center gap-2">
-        {category.icon && <span className="text-base">{category.icon}</span>}
+        {category.icon && (() => {
+          const Icon = getIconComponent(category.icon);
+          return <Icon size={16} style={{ color: category.color || "#6b7280" }} />;
+        })()}
         <span
           className="inline-block h-2.5 w-2.5 rounded-full"
           style={{ backgroundColor: category.color || "#d1d5db" }}
