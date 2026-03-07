@@ -293,17 +293,18 @@ export async function processImport(
       },
     });
 
-    // Update rule usage counts
-    const usedRuleIds = new Set<string>();
+    // Update rule usage counts (increment by actual number of matches)
+    const ruleUsageCounts = new Map<string, number>();
     for (const [, result] of categorizationResults) {
-      usedRuleIds.add(result.ruleId);
+      const count = ruleUsageCounts.get(result.ruleId) ?? 0;
+      ruleUsageCounts.set(result.ruleId, count + 1);
     }
 
-    for (const ruleId of usedRuleIds) {
+    for (const [ruleId, count] of ruleUsageCounts) {
       await tx.categorizationRule.update({
         where: { id: ruleId },
         data: {
-          usageCount: { increment: 1 },
+          usageCount: { increment: count },
           lastUsedAt: new Date(),
         },
       });
