@@ -29,6 +29,7 @@ import { ColorPicker } from "./color-picker";
 interface ParentCategory {
   id: string;
   name: string;
+  color: string | null;
 }
 
 interface EditingCategory {
@@ -73,7 +74,10 @@ export function CategoryFormModal({
     } else {
       setName("");
       setIcon("circle-dot");
-      setColor(CATEGORY_COLORS[0]);
+      const preParent = preselectedParentId
+        ? parentCategories.find((c) => c.id === preselectedParentId)
+        : null;
+      setColor(preParent?.color ?? CATEGORY_COLORS[0]);
       setParentId(preselectedParentId ?? null);
     }
     setErrors({});
@@ -146,9 +150,14 @@ export function CategoryFormModal({
               <Label>Categoria pai (opcional)</Label>
               <Select
                 value={parentId ?? "__none__"}
-                onValueChange={(v) =>
-                  setParentId(v === "__none__" ? null : v)
-                }
+                onValueChange={(v) => {
+                  const newParentId = v === "__none__" ? null : v;
+                  setParentId(newParentId);
+                  if (newParentId) {
+                    const parent = parentCategories.find((c) => c.id === newParentId);
+                    if (parent?.color) setColor(parent.color);
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Nenhuma (categoria raiz)" />

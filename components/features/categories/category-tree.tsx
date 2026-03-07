@@ -31,9 +31,7 @@ interface CategoryTreeProps {
 }
 
 export function CategoryTree({ categories }: CategoryTreeProps) {
-  const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(categories.map((c) => c.id))
-  );
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryNode | null>(
     null
@@ -46,6 +44,7 @@ export function CategoryTree({ categories }: CategoryTreeProps) {
   const parentCategories = categories.map((c) => ({
     id: c.id,
     name: c.name,
+    color: c.color,
   }));
 
   function toggleExpand(id: string) {
@@ -63,6 +62,9 @@ export function CategoryTree({ categories }: CategoryTreeProps) {
   function handleNew(parentId?: string) {
     setEditingCategory(null);
     setPreselectedParentId(parentId ?? null);
+    if (parentId) {
+      setExpanded((prev) => new Set([...prev, parentId]));
+    }
     setModalOpen(true);
     setDeleteError(null);
   }
