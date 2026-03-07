@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cards              Card[]
+  categories         Category[]
+  transactions       Transaction[]
+  imports            Import[]
+  categorizationRules CategorizationRule[]
+  recurringExpenses  RecurringExpense[]
+  incomes            Income[]
+  investments        Investment[]
+  monthlyBudgets     MonthlyBudget[]
+  monthSnapshots     MonthSnapshot[]
+  csvFormats         CsvFormat[]
+
+  @@map("users")
+}
+
+model Card {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  name            String
+  issuer          String   // nubank | itau | inter | outro
+  lastFourDigits  String?  @map("last_four_digits")
+  holderName      String?  @map("holder_name")
+  color           String?
+  csvFormatId     String?  @map("csv_format_id")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csvFormat  CsvFormat? @relation(fields: [csvFormatId], references: [id])
+  transactions Transaction[]
+  imports    Import[]
+
+  @@map("cards")
+}
+
+model CsvFormat {
+  id                String  @id @default(cuid())
+  userId            String? @map("user_id")
+  name              String
+  delimiter         String  @default(",")
+  dateColumn        String  @map("date_column")
+  descriptionColumn String  @map("description_column")
+  amountColumn      String  @map("amount_column")
+  dateFormat        String  @map("date_format") // e.g. YYYY-MM-DD, DD/MM/YYYY
+  amountLocale      String  @default("en") @map("amount_locale") // en (dot) or pt-BR (comma)
+  skipRows          Int     @default(0) @map("skip_rows")
+  encoding          String  @default("UTF-8")
+  isSystem          Boolean @default(false) @map("is_system")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@map("csv_formats")
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  userId    String? @map("user_id")
+  name      String
+  parentId  String? @map("parent_id")
+  icon      String?
+  color     String?
+  isSystem  Boolean @default(false) @map("is_system")
+  sortOrder Int     @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  transactions       Transaction[]
+  categorizationRules CategorizationRule[]
+  recurringExpenses  RecurringExpense[]
+  monthlyBudgets     MonthlyBudget[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id                   String   @id @default(cuid())
+  userId               String   @map("user_id")
+  sourceType           String   @map("source_type") // card | manual
+  cardId               String?  @map("card_id")
+  date                 DateTime @db.Date
+  description          String
+  originalTitle        String?  @map("original_title")
+  amount               Decimal  @db.Decimal(12, 2)
+  categoryId           String?  @map("category_id")
+  installmentCurrent   Int?     @map("installment_current")
+  installmentTotal     Int?     @map("installment_total")
+  isRecurring          Boolean  @default(false) @map("is_recurring")
+  categorizationMethod String?  @map("categorization_method") // rule | ai | manual
+  importId             String?  @map("import_id")
+  paymentMethod        String?  @map("payment_method") // pix | boleto | debito (for manual)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card     Card?     @relation(fields: [cardId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
+  import_  Import?   @relation(fields: [importId], references: [id])
+
+  @@index([userId, date])
+  @@index([userId, categoryId])
+  @@index([cardId])
+  @@index([importId])
+  @@map("transactions")
+}
+
+model Import {
+  id                    String   @id @default(cuid())
+  userId                String   @map("user_id")
+  cardId                String   @map("card_id")
+  fileName              String   @map("file_name")
+  monthRef              String   @map("month_ref") // YYYY-MM
+  importedAt            DateTime @default(now()) @map("imported_at")
+  txCount               Int      @default(0) @map("tx_count")
+  autoCategorizedCount  Int      @default(0) @map("auto_categorized_count")
+  aiCategorizedCount    Int      @default(0) @map("ai_categorized_count")
+  manualPendingCount    Int      @default(0) @map("manual_pending_count")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card         Card          @relation(fields: [cardId], references: [id])
+  transactions Transaction[]
+
+  @@map("imports")
+}
+
+model CategorizationRule {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  matchPattern String   @map("match_pattern")
+  matchType    String   @map("match_type") // exact | contains | regex
+  categoryId   String   @map("category_id")
+  source       String   // manual | ai
+  confidence   Decimal? @db.Decimal(5, 4) // 0.0000 to 1.0000
+  usageCount   Int      @default(0) @map("usage_count")
+  lastUsedAt   DateTime? @map("last_used_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, matchType])
+  @@map("categorization_rules")
+}
+
+model RecurringExpense {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  name            String
+  categoryId      String?  @map("category_id")
+  expectedAmount  Decimal  @db.Decimal(12, 2) @map("expected_amount")
+  dayOfMonth      Int?     @map("day_of_month")
+  sourceType      String   @map("source_type") // card | pix | boleto | debito
+  isActive        Boolean  @default(true) @map("is_active")
+  detectionMethod String   @map("detection_method") // manual | auto
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("recurring_expenses")
+}
+
+model Income {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  name          String
+  amount        Decimal  @db.Decimal(12, 2)
+  type          String   // salary | freelance | business | other
+  isActive      Boolean  @default(true) @map("is_active")
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("incomes")
+}
+
+model Investment {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  name          String
+  category      String   // renda_fixa | renda_variavel | previdencia | outro
+  amount        Decimal  @db.Decimal(12, 2)
+  isActive      Boolean  @default(true) @map("is_active")
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("investments")
+}
+
+model MonthlyBudget {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  categoryId String   @map("category_id")
+  amount     Decimal  @db.Decimal(12, 2)
+  monthRef   String   @map("month_ref") // YYYY-MM
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId, monthRef])
+  @@map("monthly_budgets")
+}
+
+model MonthSnapshot {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  monthRef         String   @map("month_ref") // YYYY-MM
+  totalIncome      Decimal  @db.Decimal(12, 2) @map("total_income")
+  totalExpenses    Decimal  @db.Decimal(12, 2) @map("total_expenses")
+  totalInvestments Decimal  @db.Decimal(12, 2) @map("total_investments")
+  totalCard        Decimal  @db.Decimal(12, 2) @map("total_card")
+  totalManual      Decimal  @db.Decimal(12, 2) @map("total_manual")
+  computedAt       DateTime @default(now()) @map("computed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, monthRef])
+  @@map("month_snapshots")
+}
