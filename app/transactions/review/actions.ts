@@ -101,7 +101,11 @@ export async function getImportsForFilter() {
 
 export async function categorizeTransactions(
   transactionIds: string[],
-  categoryId: string
+  categoryId: string,
+  options?: {
+    source?: "manual" | "ai";
+    confidence?: number;
+  }
 ) {
   if (transactionIds.length === 0) return { success: false, error: "Nenhuma transação selecionada" };
 
@@ -150,11 +154,16 @@ export async function categorizeTransactions(
           },
         });
 
+        const ruleSource = options?.source ?? "manual";
+        const ruleConfidence = options?.confidence ?? 1.0;
+
         if (existingRule) {
           await tx.categorizationRule.update({
             where: { id: existingRule.id },
             data: {
               categoryId,
+              source: ruleSource,
+              confidence: ruleConfidence,
               usageCount: { increment: 1 },
               lastUsedAt: new Date(),
             },
@@ -166,8 +175,8 @@ export async function categorizeTransactions(
               matchPattern: pattern,
               matchType: "exact",
               categoryId,
-              source: "manual",
-              confidence: 1.0,
+              source: ruleSource,
+              confidence: ruleConfidence,
               usageCount: 1,
               lastUsedAt: new Date(),
             },

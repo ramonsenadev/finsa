@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CategoryCombobox } from "./category-combobox";
 import { categorizeTransactions } from "@/app/transactions/review/actions";
-import { ArrowUpDown, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowUpDown, Check, CheckCircle2, Loader2 } from "lucide-react";
 
 type ReviewTransaction = {
   id: string;
@@ -123,7 +123,24 @@ export function ReviewQueueTable({
         return next;
       });
 
-      const result = await categorizeTransactions(transactionIds, categoryId);
+      // Determine if this is accepting an AI suggestion or a manual override.
+      // If all selected transactions had AI suggestion with the same categoryId,
+      // treat as AI acceptance (source='ai'). Otherwise, source='manual'.
+      const selectedTxs = transactions.filter((t) =>
+        transactionIds.includes(t.id)
+      );
+      const isAiAcceptance = selectedTxs.every(
+        (t) =>
+          t.categorizationMethod === "ai" && t.categoryId === categoryId
+      );
+
+      const result = await categorizeTransactions(
+        transactionIds,
+        categoryId,
+        isAiAcceptance
+          ? { source: "ai", confidence: 0.85 }
+          : { source: "manual", confidence: 1.0 }
+      );
 
       if (result.success) {
         // Remove categorized transactions from the list
@@ -151,7 +168,7 @@ export function ReviewQueueTable({
         return next;
       });
     },
-    [transactions.length]
+    [transactions]
   );
 
   // Keyboard navigation
@@ -389,7 +406,21 @@ export function ReviewQueueTable({
                 {loading.has(tx.id) ? (
                   <Loader2 className="h-4 w-4 animate-spin text-accent" />
                 ) : (
-                  <div className="relative">
+                  <div className="relative flex items-center gap-1.5">
+                    {/* Accept AI suggestion button */}
+                    {tx.categorizationMethod === "ai" && tx.categoryId && (
+                      <button
+                        type="button"
+                        title="Aceitar sugestão da IA"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCategorize([tx.id], tx.categoryId!);
+                        }}
+                        className="rounded-md border border-success/30 bg-success/10 px-2 py-1.5 text-sm text-success transition-colors hover:bg-success/20"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {
