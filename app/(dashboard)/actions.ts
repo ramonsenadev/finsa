@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { getMonthlyDashboard, type MonthlyDashboardData } from "@/lib/analytics/dashboard";
+import { getDailyExpenses, type DailyExpenseSummary } from "@/lib/analytics/daily-expenses";
 
 const DEFAULT_USER_EMAIL = "ramon@finsa.local";
 
@@ -18,4 +19,11 @@ export async function fetchDashboardData(
 ): Promise<MonthlyDashboardData> {
   const userId = await getUserId();
   return getMonthlyDashboard(userId, monthRef);
+}
+
+export async function fetchDailyExpenses(
+  monthRef: string
+): Promise<DailyExpenseSummary> {
+  const userId = await getUserId();
+  return getDailyExpenses(userId, monthRef);
 }

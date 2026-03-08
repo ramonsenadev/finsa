@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndicatorCards } from "./indicator-cards";
 import { CategoryChart } from "./category-chart";
 import { CategoryTable } from "./category-table";
+import { DailyChart } from "./daily-chart";
 import { SourceSplit } from "./source-split";
 import { TopExpenses } from "./top-expenses";
-import { fetchDashboardData } from "@/app/(dashboard)/actions";
+import { fetchDashboardData, fetchDailyExpenses } from "@/app/(dashboard)/actions";
 
 function getCurrentMonthRef() {
   const now = new Date();
@@ -22,6 +23,11 @@ export function DashboardContent() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard", monthRef],
     queryFn: () => fetchDashboardData(monthRef),
+  });
+
+  const { data: dailyData } = useQuery({
+    queryKey: ["daily-expenses", monthRef],
+    queryFn: () => fetchDailyExpenses(monthRef),
   });
 
   if (isLoading) {
@@ -83,6 +89,18 @@ export function DashboardContent() {
           />
         </CardContent>
       </Card>
+
+      {/* Daily Expense Fluctuation */}
+      {dailyData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Flutuação Diária de Gastos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DailyChart data={dailyData} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Category Summary Table */}
       <Card>
