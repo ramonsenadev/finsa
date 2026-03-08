@@ -13,7 +13,7 @@ export interface RuleInput {
 export interface CategoryMatch {
   categoryId: string;
   confidence: number;
-  method: "exact" | "contains" | "regex";
+  method: "exact" | "contains" | "regex" | "ai";
   ruleId: string;
 }
 
@@ -28,6 +28,7 @@ export interface CategorizationResult {
     byExact: number;
     byContains: number;
     byRegex: number;
+    byAi: number;
     uncategorized: number;
   };
   ruleUsage: Map<string, number>;
