@@ -11,7 +11,7 @@ export function categorizePipeline(
   const result: CategorizationResult = {
     categorized: [],
     uncategorized: [],
-    stats: { byExact: 0, byContains: 0, byRegex: 0, uncategorized: 0 },
+    stats: { byExact: 0, byContains: 0, byRegex: 0, byAi: 0, uncategorized: 0 },
     ruleUsage: new Map(),
   };
 
