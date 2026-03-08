@@ -296,6 +296,7 @@ export async function processImport(
     // Update rule usage counts (increment by actual number of matches)
     const ruleUsageCounts = new Map<string, number>();
     for (const [, result] of categorizationResults) {
+      if (!result.ruleId) continue;
       const count = ruleUsageCounts.get(result.ruleId) ?? 0;
       ruleUsageCounts.set(result.ruleId, count + 1);
     }

@@ -15,6 +15,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transacoes", icon: ArrowLeftRight },
+  { href: "/transactions/review", label: "Fila de Revisao", icon: ClipboardList },
   { href: "/cards", label: "Cartoes", icon: CreditCard },
   { href: "/recurring", label: "Recorrentes", icon: Repeat },
   { href: "/categories", label: "Categorias", icon: FolderTree },
