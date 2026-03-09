@@ -159,7 +159,8 @@ export type RecurrenceFilter = "all" | "recurring" | "variable";
 export async function getMonthlyDashboard(
   userId: string,
   monthRef: string,
-  recurrenceFilter: RecurrenceFilter = "all"
+  recurrenceFilter: RecurrenceFilter = "all",
+  topN: number = 10
 ): Promise<MonthlyDashboardData> {
   const prevMonthRef = getPrevMonthRef(monthRef);
   const { start, end } = getMonthDateRange(monthRef);
@@ -302,7 +303,7 @@ export async function getMonthlyDashboard(
   const topTransactions = await prisma.transaction.findMany({
     where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
     orderBy: { amount: "desc" },
-    take: 10,
+    take: topN,
     include: { category: true },
   });
 
