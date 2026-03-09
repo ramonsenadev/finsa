@@ -1,9 +1,15 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { Search, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Plus, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ManualTransactionModal,
@@ -76,6 +82,55 @@ function PeriodSelector() {
   );
 }
 
+function ExportDropdown() {
+  const searchParams = useSearchParams();
+  const monthRef = searchParams.get("month") || getCurrentMonthRef();
+  const [loading, setLoading] = useState(false);
+
+  async function handleExportPDF() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/export/monthly-pdf?month=${monthRef}`);
+      if (!res.ok) throw new Error("Erro ao gerar PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `finsa-relatorio-${monthRef}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Could add toast here
+      console.error("Erro ao exportar PDF");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" disabled={loading}>
+          <Download className="mr-1.5 h-4 w-4" />
+          {loading ? "Gerando..." : "Exportar"}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleExportPDF}>
+          <FileText className="mr-2 h-4 w-4" />
+          PDF Mensal
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          CSV (em breve)
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Header() {
   const [manualModalOpen, setManualModalOpen] = useState(false);
 
@@ -106,6 +161,11 @@ export function Header() {
               className="pl-9"
             />
           </div>
+
+          {/* Export dropdown */}
+          <Suspense fallback={null}>
+            <ExportDropdown />
+          </Suspense>
 
           {/* Novo Lançamento button */}
           <Button size="sm" onClick={() => setManualModalOpen(true)}>
