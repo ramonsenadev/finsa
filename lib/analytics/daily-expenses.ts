@@ -28,18 +28,28 @@ function toNumber(d: Decimal | number | null | undefined): number {
   return typeof d === "number" ? d : Number(d);
 }
 
+import type { RecurrenceFilter } from "./dashboard";
+
 export async function getDailyExpenses(
   userId: string,
-  monthRef: string
+  monthRef: string,
+  recurrenceFilter: RecurrenceFilter = "all"
 ): Promise<DailyExpenseSummary> {
   const [year, month] = monthRef.split("-").map(Number);
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
   const daysInMonth = new Date(year, month, 0).getDate();
 
+  const recurrenceWhere =
+    recurrenceFilter === "recurring"
+      ? { isRecurring: true }
+      : recurrenceFilter === "variable"
+        ? { isRecurring: false }
+        : {};
+
   // Fetch all transactions for the month with category info
   const transactions = await prisma.transaction.findMany({
-    where: { userId, date: { gte: start, lt: end } },
+    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
     select: {
       date: true,
       amount: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -8,12 +9,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { formatBRL } from "@/lib/format";
 import type { TopExpense } from "@/lib/analytics/dashboard";
 
 interface TopExpensesProps {
   data: TopExpense[];
+  showRecurringBadge?: boolean;
 }
 
 function formatDate(date: Date) {
@@ -23,7 +24,7 @@ function formatDate(date: Date) {
   }).format(new Date(date));
 }
 
-export function TopExpenses({ data }: TopExpensesProps) {
+export function TopExpenses({ data, showRecurringBadge = true }: TopExpensesProps) {
   if (data.length === 0) {
     return (
       <p className="text-sm text-foreground-secondary">
@@ -49,7 +50,17 @@ export function TopExpenses({ data }: TopExpensesProps) {
               {formatDate(tx.date)}
             </TableCell>
             <TableCell>
-              <span className="font-medium">{tx.description}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium">{tx.description}</span>
+                {showRecurringBadge && tx.isRecurring && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-recurring/10 px-1.5 py-0.5 text-[10px] font-medium text-recurring"
+                    title="Recorrente"
+                  >
+                    <RefreshCw className="h-2.5 w-2.5" />
+                  </span>
+                )}
+              </div>
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
@@ -65,14 +76,6 @@ export function TopExpenses({ data }: TopExpensesProps) {
                 <span className="text-foreground-secondary">
                   {tx.categoryName ?? "Sem categoria"}
                 </span>
-                {tx.isRecurring && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-recurring/10 text-recurring text-[10px]"
-                  >
-                    Recorrente
-                  </Badge>
-                )}
               </div>
             </TableCell>
             <TableCell className="text-right font-medium">

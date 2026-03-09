@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { getMonthlyDashboard, type MonthlyDashboardData } from "@/lib/analytics/dashboard";
+import { getMonthlyDashboard, type MonthlyDashboardData, type RecurrenceFilter } from "@/lib/analytics/dashboard";
 import { getDailyExpenses, type DailyExpenseSummary } from "@/lib/analytics/daily-expenses";
 
 const DEFAULT_USER_EMAIL = "ramon@finsa.local";
@@ -15,15 +15,17 @@ async function getUserId() {
 }
 
 export async function fetchDashboardData(
-  monthRef: string
+  monthRef: string,
+  recurrenceFilter: RecurrenceFilter = "all"
 ): Promise<MonthlyDashboardData> {
   const userId = await getUserId();
-  return getMonthlyDashboard(userId, monthRef);
+  return getMonthlyDashboard(userId, monthRef, recurrenceFilter);
 }
 
 export async function fetchDailyExpenses(
-  monthRef: string
+  monthRef: string,
+  recurrenceFilter: RecurrenceFilter = "all"
 ): Promise<DailyExpenseSummary> {
   const userId = await getUserId();
-  return getDailyExpenses(userId, monthRef);
+  return getDailyExpenses(userId, monthRef, recurrenceFilter);
 }
