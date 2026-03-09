@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/db";
-import { fetchRecurringPageData } from "./actions";
+import { fetchRecurringPageData, fetchDetectionCandidates } from "./actions";
 import { RecurringContent } from "@/components/features/recurring/recurring-content";
+import { DetectionReviewPanel } from "@/components/features/recurring/detection-review-panel";
 
 const DEFAULT_USER_EMAIL = "ramon@finsa.local";
 
 export default async function RecurringPage() {
-  const data = await fetchRecurringPageData();
+  const [data, candidates] = await Promise.all([
+    fetchRecurringPageData(),
+    fetchDetectionCandidates(),
+  ]);
 
   const user = await prisma.user.findFirst({
     where: { email: DEFAULT_USER_EMAIL },
@@ -27,7 +31,10 @@ export default async function RecurringPage() {
           Gastos fixos, assinaturas e despesas mensais.
         </p>
       </div>
-      <RecurringContent initialData={data} categories={categories} />
+      <div className="space-y-8">
+        <DetectionReviewPanel candidates={candidates} />
+        <RecurringContent initialData={data} categories={categories} />
+      </div>
     </div>
   );
 }

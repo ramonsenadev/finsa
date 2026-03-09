@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { SettingsContent } from "@/components/features/settings/settings-content";
+import { getRecurringToleranceSetting } from "./actions";
 
 export default async function SettingsPage() {
   const incomes = await prisma.income.findMany({
@@ -32,6 +33,8 @@ export default async function SettingsPage() {
     .filter((i) => i.isActive)
     .reduce((sum, i) => sum + i.amount, 0);
 
+  const recurringTolerance = await getRecurringToleranceSetting();
+
   return (
     <div className="space-y-6">
       <div>
@@ -45,6 +48,7 @@ export default async function SettingsPage() {
         incomes={incomeRows}
         investments={investmentRows}
         totalIncome={totalIncome}
+        recurringTolerance={recurringTolerance}
       />
     </div>
   );

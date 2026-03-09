@@ -157,3 +157,27 @@ export async function deleteInvestment(id: string) {
   revalidatePath("/settings");
   return { success: true };
 }
+
+// ── Preferences ──
+
+export async function getRecurringToleranceSetting() {
+  const userId = await getUserId();
+  const { getRecurringTolerance } = await import(
+    "@/lib/recurring/detection-engine"
+  );
+  return getRecurringTolerance(userId);
+}
+
+export async function updateRecurringTolerance(tolerance: number) {
+  if (tolerance < 0 || tolerance > 100) {
+    return { error: "Tolerância deve estar entre 0 e 100" };
+  }
+  const userId = await getUserId();
+  const { setRecurringTolerance } = await import(
+    "@/lib/recurring/detection-engine"
+  );
+  await setRecurringTolerance(userId, tolerance);
+  revalidatePath("/settings");
+  revalidatePath("/recurring");
+  return { success: true };
+}
