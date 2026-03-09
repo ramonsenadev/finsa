@@ -1,6 +1,7 @@
 "use client";
 
-import { RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,6 +16,21 @@ import { formatBRL } from "@/lib/format";
 import { RecategorizePopover } from "@/components/features/transactions/recategorize-popover";
 import type { CategoryItem } from "@/components/features/transactions/category-selector";
 import type { TransactionRow } from "@/lib/analytics/transactions";
+import {
+  ManualTransactionModal,
+  type ManualTransactionData,
+} from "@/components/features/transactions/manual-transaction-modal";
+import { deleteManualTransaction } from "@/app/transactions/actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TransactionsTableProps {
   transactions: TransactionRow[];
@@ -116,6 +132,32 @@ export function TransactionsTable({
   onRecategorized,
 }: TransactionsTableProps) {
   const totalPages = Math.ceil(total / pageSize);
+  const [editingTx, setEditingTx] = useState<ManualTransactionData | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deletingTxId, setDeletingTxId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function handleEdit(tx: TransactionRow) {
+    setEditingTx({
+      id: tx.id,
+      date: tx.date,
+      description: tx.description,
+      amount: tx.amount,
+      categoryId: tx.categoryId,
+      paymentMethod: tx.paymentMethod,
+      isRecurring: tx.isRecurring,
+    });
+    setEditModalOpen(true);
+  }
+
+  async function handleDelete() {
+    if (!deletingTxId) return;
+    setDeleting(true);
+    await deleteManualTransaction(deletingTxId);
+    setDeleting(false);
+    setDeletingTxId(null);
+    onRecategorized(); // refetch
+  }
 
   return (
     <div className="space-y-3">
@@ -157,7 +199,7 @@ export function TransactionsTable({
                 currentDir={sortDir}
                 onSort={onSortChange}
               />
-              <TableHead>Cartão</TableHead>
+              <TableHead>Origem</TableHead>
               <TableHead>Categoria</TableHead>
               <SortableHeader
                 label="Valor"
@@ -196,7 +238,14 @@ export function TransactionsTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    {tx.cardName && (
+                    {tx.sourceType === "manual" ? (
+                      <Badge
+                        variant="outline"
+                        className="gap-1 border-accent/40 bg-accent/10 text-xs text-accent"
+                      >
+                        Manual
+                      </Badge>
+                    ) : tx.cardName ? (
                       <Badge
                         variant="outline"
                         className="gap-1 text-xs"
@@ -218,7 +267,7 @@ export function TransactionsTable({
                         )}
                         {tx.cardName}
                       </Badge>
-                    )}
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <RecategorizePopover
@@ -234,14 +283,36 @@ export function TransactionsTable({
                   </TableCell>
                   <TableCell>{methodBadge(tx.categorizationMethod)}</TableCell>
                   <TableCell>
-                    {tx.isRecurring && (
-                      <span
-                        className="inline-flex items-center rounded-full bg-recurring/10 p-1"
-                        title="Recorrente"
-                      >
-                        <RefreshCw className="h-3 w-3 text-recurring" />
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {tx.isRecurring && (
+                        <span
+                          className="inline-flex items-center rounded-full bg-recurring/10 p-1"
+                          title="Recorrente"
+                        >
+                          <RefreshCw className="h-3 w-3 text-recurring" />
+                        </span>
+                      )}
+                      {tx.sourceType === "manual" && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(tx)}
+                            className="inline-flex items-center rounded p-1 text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingTxId(tx.id)}
+                            className="inline-flex items-center rounded p-1 text-foreground-secondary hover:bg-error/10 hover:text-error transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -300,6 +371,37 @@ export function TransactionsTable({
           </div>
         </div>
       )}
+
+      {/* Edit manual transaction modal */}
+      <ManualTransactionModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        editingTransaction={editingTx}
+        categories={categories}
+        onSaved={onRecategorized}
+      />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deletingTxId} onOpenChange={(open) => !open && setDeletingTxId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lançamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este lançamento manual? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-error text-white hover:bg-error/90"
+            >
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

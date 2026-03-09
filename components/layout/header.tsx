@@ -1,10 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Suspense, useState } from "react";
+import { Search, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  ManualTransactionModal,
+} from "@/components/features/transactions/manual-transaction-modal";
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -74,31 +77,49 @@ function PeriodSelector() {
 }
 
 export function Header() {
-  return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6">
-      <Suspense
-        fallback={
-          <div className="flex items-center gap-1">
-            <span className="mr-2 text-sm font-medium text-foreground-secondary">
-              Período:
-            </span>
-            <span className="min-w-35 text-center text-sm font-semibold text-foreground">
-              {formatMonthLabel(getCurrentMonthRef())}
-            </span>
-          </div>
-        }
-      >
-        <PeriodSelector />
-      </Suspense>
+  const [manualModalOpen, setManualModalOpen] = useState(false);
 
-      {/* Global search placeholder */}
-      <div className="relative w-72">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-secondary" />
-        <Input
-          placeholder="Buscar transações..."
-          className="pl-9"
-        />
-      </div>
-    </header>
+  return (
+    <>
+      <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6">
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-1">
+              <span className="mr-2 text-sm font-medium text-foreground-secondary">
+                Período:
+              </span>
+              <span className="min-w-35 text-center text-sm font-semibold text-foreground">
+                {formatMonthLabel(getCurrentMonthRef())}
+              </span>
+            </div>
+          }
+        >
+          <PeriodSelector />
+        </Suspense>
+
+        <div className="flex items-center gap-3">
+          {/* Global search placeholder */}
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-secondary" />
+            <Input
+              placeholder="Buscar transações..."
+              className="pl-9"
+            />
+          </div>
+
+          {/* Novo Lançamento button */}
+          <Button size="sm" onClick={() => setManualModalOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Novo Lançamento
+          </Button>
+        </div>
+      </header>
+
+      <ManualTransactionModal
+        open={manualModalOpen}
+        onOpenChange={setManualModalOpen}
+        editingTransaction={null}
+      />
+    </>
   );
 }

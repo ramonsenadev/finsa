@@ -7,6 +7,10 @@ import {
   extractMerchant,
 } from "@/lib/categorization/normalizer";
 import {
+  manualTransactionSchema,
+  type ManualTransactionFormData,
+} from "@/lib/validations/manual-transaction";
+import {
   getTransactions,
   getTransactionsForExport,
   type TransactionFilters,
@@ -22,6 +26,157 @@ async function getUserId() {
   });
   if (!user) throw new Error("User not found");
   return user.id;
+}
+
+// ─── Manual transaction CRUD ────────────────────────────────────────
+
+export async function createManualTransaction(data: ManualTransactionFormData) {
+  const parsed = manualTransactionSchema.safeParse(data);
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors };
+  }
+
+  const userId = await getUserId();
+  const { date, description, amount, categoryId, paymentMethod, isRecurring, dayOfMonth } = parsed.data;
+
+  const transaction = await prisma.transaction.create({
+    data: {
+      userId,
+      sourceType: "manual",
+      date,
+      description,
+      amount,
+      categoryId,
+      paymentMethod,
+      isRecurring,
+      categorizationMethod: "manual",
+    },
+  });
+
+  if (isRecurring) {
+    await prisma.recurringExpense.create({
+      data: {
+        userId,
+        name: description,
+        categoryId,
+        expectedAmount: amount,
+        dayOfMonth: dayOfMonth ?? date.getDate(),
+        sourceType: paymentMethod,
+        detectionMethod: "manual",
+      },
+    });
+  }
+
+  revalidatePaths();
+  return { success: true, id: transaction.id };
+}
+
+export async function updateManualTransaction(id: string, data: ManualTransactionFormData) {
+  const parsed = manualTransactionSchema.safeParse(data);
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors };
+  }
+
+  const userId = await getUserId();
+  const { date, description, amount, categoryId, paymentMethod, isRecurring, dayOfMonth } = parsed.data;
+
+  const existing = await prisma.transaction.findFirst({
+    where: { id, userId, sourceType: "manual" },
+  });
+  if (!existing) {
+    return { error: "Transação não encontrada" };
+  }
+
+  await prisma.transaction.update({
+    where: { id },
+    data: {
+      date,
+      description,
+      amount,
+      categoryId,
+      paymentMethod,
+      isRecurring,
+    },
+  });
+
+  // Update or create/delete recurring expense
+  if (isRecurring) {
+    const existingRecurring = await prisma.recurringExpense.findFirst({
+      where: { userId, name: existing.description, detectionMethod: "manual" },
+    });
+    if (existingRecurring) {
+      await prisma.recurringExpense.update({
+        where: { id: existingRecurring.id },
+        data: {
+          name: description,
+          categoryId,
+          expectedAmount: amount,
+          dayOfMonth: dayOfMonth ?? date.getDate(),
+          sourceType: paymentMethod,
+        },
+      });
+    } else {
+      await prisma.recurringExpense.create({
+        data: {
+          userId,
+          name: description,
+          categoryId,
+          expectedAmount: amount,
+          dayOfMonth: dayOfMonth ?? date.getDate(),
+          sourceType: paymentMethod,
+          detectionMethod: "manual",
+        },
+      });
+    }
+  }
+
+  revalidatePaths();
+  return { success: true };
+}
+
+export async function deleteManualTransaction(id: string) {
+  const userId = await getUserId();
+
+  const existing = await prisma.transaction.findFirst({
+    where: { id, userId, sourceType: "manual" },
+  });
+  if (!existing) {
+    return { error: "Transação não encontrada" };
+  }
+
+  await prisma.transaction.delete({ where: { id } });
+
+  // Also deactivate matching recurring expense if it exists
+  if (existing.isRecurring) {
+    await prisma.recurringExpense.updateMany({
+      where: { userId, name: existing.description, detectionMethod: "manual" },
+      data: { isActive: false },
+    });
+  }
+
+  revalidatePaths();
+  return { success: true };
+}
+
+export async function fetchManualTransaction(id: string) {
+  const userId = await getUserId();
+  const tx = await prisma.transaction.findFirst({
+    where: { id, userId, sourceType: "manual" },
+    select: {
+      id: true,
+      date: true,
+      description: true,
+      amount: true,
+      categoryId: true,
+      paymentMethod: true,
+      isRecurring: true,
+    },
+  });
+  if (!tx) return null;
+  return {
+    ...tx,
+    amount: Number(tx.amount),
+  };
 }
 
 // ─── Transaction listing ────────────────────────────────────────────
