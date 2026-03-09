@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
+import { SkeletonIndicatorCards, SkeletonChart } from "@/components/ui/skeleton-card";
 import { IndicatorCards } from "./indicator-cards";
 import { CategoryChart } from "./category-chart";
 import { CategoryTable } from "./category-table";
@@ -45,22 +48,9 @@ export function DashboardContent() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="gap-3 py-4">
-              <div className="px-4">
-                <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                <div className="mt-2 h-7 w-28 animate-pulse rounded bg-muted" />
-                <div className="mt-2 h-3 w-16 animate-pulse rounded bg-muted" />
-              </div>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardContent>
-            <div className="h-64 animate-pulse rounded bg-muted" />
-          </CardContent>
-        </Card>
+        <SkeletonIndicatorCards />
+        <SkeletonChart />
+        <SkeletonChart />
       </div>
     );
   }
@@ -70,6 +60,18 @@ export function DashboardContent() {
       <p className="text-sm text-error">
         Erro ao carregar dados do dashboard.
       </p>
+    );
+  }
+
+  // Empty state: no transactions at all
+  if (data.totalExpenses === 0 && data.categoryBreakdown.length === 0) {
+    return (
+      <EmptyState
+        icon={Upload}
+        title="Importe seu primeiro CSV para começar"
+        description="Importe a fatura do seu cartão de crédito ou adicione lançamentos manuais para visualizar seus gastos."
+        action={{ label: "Importar CSV", href: "/import" }}
+      />
     );
   }
 
@@ -123,80 +125,92 @@ export function DashboardContent() {
       )}
 
       {/* Category Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Distribuição por Categoria</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CategoryChart
-            data={data.categoryBreakdown}
-            totalIncome={data.totalIncome}
-            hasIncome={data.hasIncome}
-          />
-        </CardContent>
-      </Card>
+      <SectionErrorBoundary fallbackTitle="Erro ao carregar gráfico de categorias">
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribuição por Categoria</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CategoryChart
+              data={data.categoryBreakdown}
+              totalIncome={data.totalIncome}
+              hasIncome={data.hasIncome}
+            />
+          </CardContent>
+        </Card>
+      </SectionErrorBoundary>
 
       {/* Daily Expense Fluctuation */}
-      {dailyData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Flutuação Diária de Gastos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DailyChart data={dailyData} />
-          </CardContent>
-        </Card>
-      )}
+      <SectionErrorBoundary fallbackTitle="Erro ao carregar gráfico diário">
+        {dailyData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Flutuação Diária de Gastos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DailyChart data={dailyData} />
+            </CardContent>
+          </Card>
+        )}
+      </SectionErrorBoundary>
 
       {/* Investment Panel */}
-      {investmentData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Investimentos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <InvestmentPanel data={investmentData} />
-          </CardContent>
-        </Card>
-      )}
+      <SectionErrorBoundary fallbackTitle="Erro ao carregar investimentos">
+        {investmentData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Investimentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InvestmentPanel data={investmentData} />
+            </CardContent>
+          </Card>
+        )}
+      </SectionErrorBoundary>
 
       {/* Category Summary Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumo por Categoria</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CategoryTable data={data.categoryBreakdown} />
-        </CardContent>
-      </Card>
+      <SectionErrorBoundary fallbackTitle="Erro ao carregar tabela de categorias">
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo por Categoria</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CategoryTable data={data.categoryBreakdown} />
+          </CardContent>
+        </Card>
+      </SectionErrorBoundary>
 
       {/* Bottom row: Split + Top Expenses */}
-      <div className="grid grid-cols-[280px_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
         {/* Source Split */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Cartão vs. Manual</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SourceSplit
-              totalCard={data.totalCard}
-              totalManual={data.totalManual}
-            />
-          </CardContent>
-        </Card>
+        <SectionErrorBoundary fallbackTitle="Erro ao carregar divisão">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Cartão vs. Manual</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SourceSplit
+                totalCard={data.totalCard}
+                totalManual={data.totalManual}
+              />
+            </CardContent>
+          </Card>
+        </SectionErrorBoundary>
 
         {/* Top 10 Expenses */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 10 Maiores Gastos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TopExpenses
-              data={data.topExpenses}
-              showRecurringBadge={recurrenceFilter === "all"}
-            />
-          </CardContent>
-        </Card>
+        <SectionErrorBoundary fallbackTitle="Erro ao carregar top gastos">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top 10 Maiores Gastos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TopExpenses
+                data={data.topExpenses}
+                showRecurringBadge={recurrenceFilter === "all"}
+              />
+            </CardContent>
+          </Card>
+        </SectionErrorBoundary>
       </div>
     </div>
   );

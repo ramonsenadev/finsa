@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,8 @@ import {
   ChevronRight,
   ClipboardList,
   TrendingUp,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -25,29 +27,64 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/comparison", label: "Comparação", icon: TrendingUp },
-  { href: "/transactions", label: "Transacoes", icon: ArrowLeftRight },
-  { href: "/transactions/review", label: "Fila de Revisao", icon: ClipboardList },
-  { href: "/cards", label: "Cartoes", icon: CreditCard },
+  { href: "/transactions", label: "Transações", icon: ArrowLeftRight },
+  { href: "/transactions/review", label: "Fila de Revisão", icon: ClipboardList },
+  { href: "/cards", label: "Cartões", icon: CreditCard },
   { href: "/recurring", label: "Recorrentes", icon: Repeat },
   { href: "/categories", label: "Categorias", icon: FolderTree },
   { href: "/import", label: "Import", icon: Upload },
-  { href: "/budget", label: "Orcamento", icon: PiggyBank },
-  { href: "/settings", label: "Configuracoes", icon: Settings },
+  { href: "/budget", label: "Orçamento", icon: PiggyBank },
+  { href: "/settings", label: "Configurações", icon: Settings },
 ];
 
-export function Sidebar() {
+// Context so the header can trigger sidebar open on mobile
+const SidebarContext = createContext<{
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
+  collapsed: boolean;
+}>({ mobileOpen: false, setMobileOpen: () => {}, collapsed: false });
+
+export const useSidebar = () => useContext(SidebarContext);
+
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const pathname = usePathname();
 
   return (
-    <aside
-      className={cn(
-        "flex h-screen flex-col border-r border-border bg-background-secondary transition-all duration-200",
-        collapsed ? "w-16" : "w-60"
-      )}
-    >
+    <SidebarContext.Provider value={{ mobileOpen, setMobileOpen, collapsed }}>
+      {children}
+      <Sidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
+    </SidebarContext.Provider>
+  );
+}
+
+function Sidebar({
+  collapsed,
+  setCollapsed,
+  mobileOpen,
+  setMobileOpen,
+}: {
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+  mobileOpen: boolean;
+  setMobileOpen: (v: boolean) => void;
+}) {
+  const pathname = usePathname();
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname, setMobileOpen]);
+
+  const sidebarContent = (
+    <>
       {/* Logo */}
-      <div className="flex h-14 items-center px-4">
+      <div className="flex h-14 items-center justify-between px-4">
         {!collapsed && (
           <span className="text-lg font-semibold tracking-tight text-accent">
             Finsa
@@ -56,12 +93,21 @@ export function Sidebar() {
         {collapsed && (
           <span className="text-lg font-semibold text-accent">F</span>
         )}
+        {/* Close button on mobile */}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setMobileOpen(false)}
+          className="text-foreground-secondary lg:hidden"
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <Separator />
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
@@ -99,8 +145,8 @@ export function Sidebar() {
 
       <Separator />
 
-      {/* Collapse toggle */}
-      <div className="p-2">
+      {/* Collapse toggle (desktop only) */}
+      <div className="hidden p-2 lg:block">
         <Button
           variant="ghost"
           size="sm"
@@ -114,6 +160,53 @@ export function Sidebar() {
           )}
         </Button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          "hidden h-screen flex-col border-r border-border bg-background-secondary transition-all duration-200 lg:flex",
+          collapsed ? "w-16" : "w-60"
+        )}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-border bg-background-secondary transition-transform duration-200 lg:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {sidebarContent}
+      </aside>
+    </>
+  );
+}
+
+export function MobileMenuButton() {
+  const { setMobileOpen } = useSidebar();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={() => setMobileOpen(true)}
+      className="text-foreground-secondary lg:hidden"
+    >
+      <Menu className="h-5 w-5" />
+    </Button>
   );
 }

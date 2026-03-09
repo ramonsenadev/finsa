@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -167,6 +169,9 @@ export function ManualTransactionModal({
       return;
     }
 
+    toast.success(
+      editingTransaction ? "Lançamento atualizado" : "Lançamento adicionado"
+    );
     onSaved?.();
     onOpenChange(false);
   }
@@ -296,6 +301,7 @@ export function ManualTransactionModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {submitting
                 ? "Salvando..."
                 : editingTransaction

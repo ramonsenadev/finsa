@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { StepSelect } from "./step-select";
 import { StepPreview } from "./step-preview";
 import { StepProcessing } from "./step-processing";
@@ -131,9 +132,11 @@ export function ImportWizard({ cards }: { cards: Card[] }) {
       if ("success" in result) {
         setImportResult(result as ImportResult);
         setStep(3);
+        toast.success(`Import concluído: ${(result as ImportResult).imported} transações`);
       }
     } catch {
       setError("Erro ao processar o import");
+      toast.error("Erro ao processar o import");
     }
 
     setIsLoading(false);

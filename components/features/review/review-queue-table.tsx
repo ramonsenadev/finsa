@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -155,6 +156,11 @@ export function ReviewQueueTable({
         setCategorizedCount((c) => c + transactionIds.length);
         setOpenComboboxRow(null);
         setBatchComboboxOpen(false);
+        toast.success(
+          transactionIds.length === 1
+            ? "Transação categorizada"
+            : `${transactionIds.length} transações categorizadas`
+        );
 
         // Adjust active row if needed
         setActiveRow((prev) =>

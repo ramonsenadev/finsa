@@ -8,8 +8,10 @@ import {
   AlertTriangle,
   Tag,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -200,6 +202,17 @@ export function StepPreview({
         </div>
       )}
 
+      {/* Progress bar during import */}
+      {isLoading && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-foreground-secondary">
+            <Loader2 className="h-4 w-4 animate-spin text-accent" />
+            Importando e categorizando transações...
+          </div>
+          <Progress value={65} className="h-2" />
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center justify-between pt-2">
         <Button variant="outline" onClick={onBack} disabled={isLoading}>
@@ -210,9 +223,14 @@ export function StepPreview({
           onClick={() => onConfirm(skipDuplicates)}
           disabled={isLoading || importableCount === 0}
         >
-          {isLoading
-            ? "Importando..."
-            : `Confirmar Import (${importableCount} transações)`}
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Importando...
+            </>
+          ) : (
+            `Confirmar Import (${importableCount} transações)`
+          )}
         </Button>
       </div>
     </div>

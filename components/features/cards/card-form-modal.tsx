@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -133,6 +135,7 @@ export function CardFormModal({
         return;
       }
 
+      toast.success(isEditing ? "Cartão atualizado" : "Cartão criado");
       onOpenChange(false);
     } finally {
       setSubmitting(false);
@@ -311,6 +314,7 @@ export function CardFormModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {submitting
                 ? "Salvando..."
                 : isEditing
