@@ -154,19 +154,54 @@ async function getOrComputeSnapshot(userId: string, monthRef: string) {
   return totals;
 }
 
+export type RecurrenceFilter = "all" | "recurring" | "variable";
+
 export async function getMonthlyDashboard(
   userId: string,
-  monthRef: string
+  monthRef: string,
+  recurrenceFilter: RecurrenceFilter = "all"
 ): Promise<MonthlyDashboardData> {
   const prevMonthRef = getPrevMonthRef(monthRef);
   const { start, end } = getMonthDateRange(monthRef);
   const prevRange = getMonthDateRange(prevMonthRef);
 
+  // Recurrence where clause (only applied to expense queries, not income/investments)
+  const recurrenceWhere =
+    recurrenceFilter === "recurring"
+      ? { isRecurring: true }
+      : recurrenceFilter === "variable"
+        ? { isRecurring: false }
+        : {};
+
   // Current and previous month totals (parallel)
-  const [current, prev] = await Promise.all([
+  // Snapshots are always "all" — we compute filtered totals separately when needed
+  const [snapshot, prev] = await Promise.all([
     getOrComputeSnapshot(userId, monthRef),
     getOrComputeSnapshot(userId, prevMonthRef),
   ]);
+
+  // If filtering, compute filtered expense totals directly
+  let current = snapshot;
+  if (recurrenceFilter !== "all") {
+    const filteredAgg = await prisma.transaction.aggregate({
+      where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
+      _sum: { amount: true },
+    });
+    const filteredCardAgg = await prisma.transaction.aggregate({
+      where: { userId, date: { gte: start, lt: end }, sourceType: "card", ...recurrenceWhere },
+      _sum: { amount: true },
+    });
+    const filteredManualAgg = await prisma.transaction.aggregate({
+      where: { userId, date: { gte: start, lt: end }, sourceType: "manual", ...recurrenceWhere },
+      _sum: { amount: true },
+    });
+    current = {
+      ...snapshot,
+      totalExpenses: toNumber(filteredAgg._sum.amount),
+      totalCard: toNumber(filteredCardAgg._sum.amount),
+      totalManual: toNumber(filteredManualAgg._sum.amount),
+    };
+  }
 
   // Check if user has any income configured
   const incomeCount = await prisma.income.count({
@@ -177,14 +212,14 @@ export async function getMonthlyDashboard(
   // Category breakdown: group transactions by parent category
   const txByCategory = await prisma.transaction.groupBy({
     by: ["categoryId"],
-    where: { userId, date: { gte: start, lt: end } },
+    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
     _sum: { amount: true },
   });
 
   // Previous month by category
   const prevTxByCategory = await prisma.transaction.groupBy({
     by: ["categoryId"],
-    where: { userId, date: { gte: prevRange.start, lt: prevRange.end } },
+    where: { userId, date: { gte: prevRange.start, lt: prevRange.end }, ...recurrenceWhere },
     _sum: { amount: true },
   });
   const prevByCatMap = new Map(
@@ -265,7 +300,7 @@ export async function getMonthlyDashboard(
 
   // Top 10 expenses
   const topTransactions = await prisma.transaction.findMany({
-    where: { userId, date: { gte: start, lt: end } },
+    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
     orderBy: { amount: "desc" },
     take: 10,
     include: { category: true },

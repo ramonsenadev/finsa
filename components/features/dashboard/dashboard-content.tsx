@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndicatorCards } from "./indicator-cards";
 import { CategoryChart } from "./category-chart";
@@ -9,7 +11,10 @@ import { CategoryTable } from "./category-table";
 import { DailyChart } from "./daily-chart";
 import { SourceSplit } from "./source-split";
 import { TopExpenses } from "./top-expenses";
+import { RecurrenceToggle } from "./recurrence-toggle";
 import { fetchDashboardData, fetchDailyExpenses } from "@/app/(dashboard)/actions";
+import { formatBRL } from "@/lib/format";
+import type { RecurrenceFilter } from "@/lib/analytics/dashboard";
 
 function getCurrentMonthRef() {
   const now = new Date();
@@ -19,15 +24,16 @@ function getCurrentMonthRef() {
 export function DashboardContent() {
   const searchParams = useSearchParams();
   const monthRef = searchParams.get("month") || getCurrentMonthRef();
+  const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>("all");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["dashboard", monthRef],
-    queryFn: () => fetchDashboardData(monthRef),
+    queryKey: ["dashboard", monthRef, recurrenceFilter],
+    queryFn: () => fetchDashboardData(monthRef, recurrenceFilter),
   });
 
   const { data: dailyData } = useQuery({
-    queryKey: ["daily-expenses", monthRef],
-    queryFn: () => fetchDailyExpenses(monthRef),
+    queryKey: ["daily-expenses", monthRef, recurrenceFilter],
+    queryFn: () => fetchDailyExpenses(monthRef, recurrenceFilter),
   });
 
   if (isLoading) {
@@ -61,8 +67,18 @@ export function DashboardContent() {
     );
   }
 
+  const isFiltered = recurrenceFilter !== "all";
+  const filterLabel = recurrenceFilter === "recurring" ? "Fixo" : "Variável";
+  const percentOfIncome =
+    data.hasIncome && data.totalIncome > 0
+      ? (data.totalExpenses / data.totalIncome) * 100
+      : null;
+
   return (
     <div className="space-y-6">
+      {/* Recurrence Toggle */}
+      <RecurrenceToggle value={recurrenceFilter} onChange={setRecurrenceFilter} />
+
       {/* Indicator Cards */}
       <IndicatorCards
         totalIncome={data.totalIncome}
@@ -75,6 +91,30 @@ export function DashboardContent() {
         prevTotalInvestments={data.prevTotalInvestments}
         prevFreeBalance={data.prevFreeBalance}
       />
+
+      {/* Extra card for filtered modes */}
+      {isFiltered && (
+        <Card className="border-recurring/30 bg-recurring/5">
+          <div className="flex items-center gap-3 px-4 py-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-recurring/10">
+              <RefreshCw className="h-5 w-5 text-recurring" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-foreground-secondary">
+                Total {filterLabel} Mensal
+              </p>
+              <p className="text-xl font-bold text-foreground">
+                {formatBRL(data.totalExpenses)}
+                {percentOfIncome != null && (
+                  <span className="ml-2 text-sm font-normal text-foreground-secondary">
+                    ({percentOfIncome.toFixed(1)}% da renda)
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Category Distribution */}
       <Card>
@@ -133,7 +173,10 @@ export function DashboardContent() {
             <CardTitle>Top 10 Maiores Gastos</CardTitle>
           </CardHeader>
           <CardContent>
-            <TopExpenses data={data.topExpenses} />
+            <TopExpenses
+              data={data.topExpenses}
+              showRecurringBadge={recurrenceFilter === "all"}
+            />
           </CardContent>
         </Card>
       </div>
