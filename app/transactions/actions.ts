@@ -6,6 +6,13 @@ import {
   normalizeTitle,
   extractMerchant,
 } from "@/lib/categorization/normalizer";
+import {
+  getTransactions,
+  getTransactionsForExport,
+  type TransactionFilters,
+  type TransactionsResult,
+  type TransactionExportRow,
+} from "@/lib/analytics/transactions";
 
 const DEFAULT_USER_EMAIL = "ramon@finsa.local";
 
@@ -15,6 +22,42 @@ async function getUserId() {
   });
   if (!user) throw new Error("User not found");
   return user.id;
+}
+
+// ─── Transaction listing ────────────────────────────────────────────
+
+export async function fetchTransactions(
+  filters: TransactionFilters
+): Promise<TransactionsResult> {
+  const userId = await getUserId();
+  return getTransactions(userId, filters);
+}
+
+export async function fetchTransactionsForExport(
+  filters: TransactionFilters
+): Promise<TransactionExportRow[]> {
+  const userId = await getUserId();
+  return getTransactionsForExport(userId, filters);
+}
+
+export async function fetchCards() {
+  const userId = await getUserId();
+  const cards = await prisma.card.findMany({
+    where: { userId, isActive: true },
+    select: { id: true, name: true, color: true, lastFourDigits: true },
+    orderBy: { name: "asc" },
+  });
+  return cards;
+}
+
+export async function fetchAllCategories() {
+  const userId = await getUserId();
+  const categories = await prisma.category.findMany({
+    where: { OR: [{ userId }, { isSystem: true }] },
+    select: { id: true, name: true, parentId: true, icon: true, color: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+  return categories;
 }
 
 /**
