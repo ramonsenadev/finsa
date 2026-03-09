@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { fetchComparison } from "@/app/(dashboard)/comparison/actions";
 import { PeriodSelector } from "./period-selector";
 import { EvolutionChart } from "./evolution-chart";
@@ -47,6 +49,26 @@ export function ComparisonContent() {
     setEndMonth(end);
   }
 
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportPDF() {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ startMonth, endMonth });
+      const res = await fetch(`/api/export/comparison-pdf?${params}`);
+      if (!res.ok) throw new Error("Falha ao gerar PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `finsa-comparativo-${startMonth}-a-${endMonth}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (error) {
     return (
       <p className="text-sm text-error">
@@ -57,13 +79,24 @@ export function ComparisonContent() {
 
   return (
     <div className="space-y-6">
-      <PeriodSelector
-        startMonth={startMonth}
-        endMonth={endMonth}
-        onPreset={handlePreset}
-        onYearPreset={handleYearPreset}
-        onCustomRange={handleCustomRange}
-      />
+      <div className="flex items-center justify-between gap-4">
+        <PeriodSelector
+          startMonth={startMonth}
+          endMonth={endMonth}
+          onPreset={handlePreset}
+          onYearPreset={handleYearPreset}
+          onCustomRange={handleCustomRange}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportPDF}
+          disabled={exporting || isLoading || !data}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {exporting ? "Gerando..." : "Exportar PDF"}
+        </Button>
+      </div>
 
       <Card>
         <CardHeader>
