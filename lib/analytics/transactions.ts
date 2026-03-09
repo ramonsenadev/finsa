@@ -29,6 +29,7 @@ export interface TransactionRow {
   date: Date;
   description: string;
   amount: number;
+  sourceType: string;
   cardId: string | null;
   cardName: string | null;
   cardColor: string | null;
@@ -38,6 +39,7 @@ export interface TransactionRow {
   categoryColor: string | null;
   parentCategoryName: string | null;
   categorizationMethod: string | null;
+  paymentMethod: string | null;
   isRecurring: boolean;
   installmentCurrent: number | null;
   installmentTotal: number | null;
@@ -175,8 +177,9 @@ export async function getTransactions(
         date: t.date,
         description: t.description,
         amount: toNumber(t.amount),
+        sourceType: t.sourceType,
         cardId: t.cardId,
-        cardName: t.card?.name ?? (t.sourceType === "manual" ? "Manual" : null),
+        cardName: t.card?.name ?? null,
         cardColor: t.card?.color ?? null,
         categoryId: t.categoryId,
         categoryName: cat?.name ?? null,
@@ -184,6 +187,7 @@ export async function getTransactions(
         categoryColor: (parentCat ?? cat)?.color ?? null,
         parentCategoryName: parentCat?.name ?? null,
         categorizationMethod: t.categorizationMethod,
+        paymentMethod: t.paymentMethod,
         isRecurring: t.isRecurring,
         installmentCurrent: t.installmentCurrent,
         installmentTotal: t.installmentTotal,
@@ -223,7 +227,7 @@ export async function getTransactionsForExport(
     amount: t.amount,
     category: t.parentCategoryName ?? t.categoryName ?? "Sem categoria",
     subcategory: t.parentCategoryName ? (t.categoryName ?? "") : "",
-    card: t.cardName ?? "",
+    card: t.sourceType === "manual" ? "Manual" : (t.cardName ?? ""),
     categorizationMethod:
       t.categorizationMethod === "rule"
         ? "Regra"
