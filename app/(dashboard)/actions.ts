@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { getMonthlyDashboard, type MonthlyDashboardData, type RecurrenceFilter } from "@/lib/analytics/dashboard";
 import { getDailyExpenses, type DailyExpenseSummary } from "@/lib/analytics/daily-expenses";
+import { getInvestmentEvolution, type InvestmentEvolutionData } from "@/lib/analytics/investment-evolution";
 
 const DEFAULT_USER_EMAIL = "ramon@finsa.local";
 
@@ -28,4 +29,12 @@ export async function fetchDailyExpenses(
 ): Promise<DailyExpenseSummary> {
   const userId = await getUserId();
   return getDailyExpenses(userId, monthRef, recurrenceFilter);
+}
+
+export async function fetchInvestmentEvolution(
+  monthRef: string,
+  monthCount: number = 6
+): Promise<InvestmentEvolutionData> {
+  const userId = await getUserId();
+  return getInvestmentEvolution(userId, monthRef, monthCount);
 }
