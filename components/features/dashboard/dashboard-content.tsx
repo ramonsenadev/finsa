@@ -12,7 +12,8 @@ import { DailyChart } from "./daily-chart";
 import { SourceSplit } from "./source-split";
 import { TopExpenses } from "./top-expenses";
 import { RecurrenceToggle } from "./recurrence-toggle";
-import { fetchDashboardData, fetchDailyExpenses } from "@/app/(dashboard)/actions";
+import { InvestmentPanel } from "./investment-panel";
+import { fetchDashboardData, fetchDailyExpenses, fetchInvestmentEvolution } from "@/app/(dashboard)/actions";
 import { formatBRL } from "@/lib/format";
 import type { RecurrenceFilter } from "@/lib/analytics/dashboard";
 
@@ -34,6 +35,11 @@ export function DashboardContent() {
   const { data: dailyData } = useQuery({
     queryKey: ["daily-expenses", monthRef, recurrenceFilter],
     queryFn: () => fetchDailyExpenses(monthRef, recurrenceFilter),
+  });
+
+  const { data: investmentData } = useQuery({
+    queryKey: ["investment-evolution", monthRef],
+    queryFn: () => fetchInvestmentEvolution(monthRef),
   });
 
   if (isLoading) {
@@ -138,6 +144,18 @@ export function DashboardContent() {
           </CardHeader>
           <CardContent>
             <DailyChart data={dailyData} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Investment Panel */}
+      {investmentData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Investimentos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InvestmentPanel data={investmentData} />
           </CardContent>
         </Card>
       )}
