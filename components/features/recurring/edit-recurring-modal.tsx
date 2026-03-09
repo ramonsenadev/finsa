@@ -1,0 +1,188 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+} from "@/lib/validations/manual-transaction";
+import {
+  CategorySelector,
+  type CategoryItem,
+} from "@/components/features/transactions/category-selector";
+import type { RecurringExpenseRow } from "@/app/recurring/actions";
+
+interface EditRecurringModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  recurring: RecurringExpenseRow | null;
+  categories: CategoryItem[];
+  onSave: (
+    id: string,
+    data: {
+      name: string;
+      categoryId: string | null;
+      expectedAmount: number;
+      dayOfMonth: number | null;
+      sourceType: string;
+    }
+  ) => Promise<void>;
+}
+
+function formatAmountForInput(value: number): string {
+  return value.toFixed(2).replace(".", ",");
+}
+
+function parseAmountInput(value: string): number {
+  const cleaned = value.replace(/\./g, "").replace(",", ".");
+  return parseFloat(cleaned) || 0;
+}
+
+export function EditRecurringModal({
+  open,
+  onOpenChange,
+  recurring,
+  categories,
+  onSave,
+}: EditRecurringModalProps) {
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [dayOfMonth, setDayOfMonth] = useState("");
+  const [sourceType, setSourceType] = useState("pix");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open && recurring) {
+      setName(recurring.name);
+      setAmount(formatAmountForInput(recurring.expectedAmount));
+      setCategoryId(recurring.categoryId);
+      setDayOfMonth(recurring.dayOfMonth ? String(recurring.dayOfMonth) : "");
+      setSourceType(recurring.sourceType);
+    }
+  }, [open, recurring]);
+
+  const selectedCategoryName = (() => {
+    if (!categoryId) return null;
+    const cat = categories.find((c) => c.id === categoryId);
+    if (!cat) return null;
+    const parent = cat.parentId
+      ? categories.find((c) => c.id === cat.parentId)
+      : null;
+    return parent ? `${parent.name} › ${cat.name}` : cat.name;
+  })();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!recurring) return;
+
+    setSubmitting(true);
+    await onSave(recurring.id, {
+      name,
+      categoryId,
+      expectedAmount: parseAmountInput(amount),
+      dayOfMonth: dayOfMonth ? parseInt(dayOfMonth, 10) : null,
+      sourceType,
+    });
+    setSubmitting(false);
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Editar Recorrente</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="rec-name">Nome</Label>
+            <Input
+              id="rec-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rec-amount">Valor esperado (R$)</Label>
+            <Input
+              id="rec-amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              inputMode="decimal"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Categoria</Label>
+            <CategorySelector
+              categories={categories}
+              value={categoryId}
+              categoryName={selectedCategoryName}
+              onSelect={setCategoryId}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rec-day">Dia do mês</Label>
+            <Input
+              id="rec-day"
+              type="number"
+              min={1}
+              max={31}
+              value={dayOfMonth}
+              onChange={(e) => setDayOfMonth(e.target.value)}
+              placeholder="Qualquer dia"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Método de Pagamento</Label>
+            <Select value={sourceType} onValueChange={setSourceType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {PAYMENT_METHOD_LABELS[m]}
+                  </SelectItem>
+                ))}
+                <SelectItem value="card">Cartão</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
