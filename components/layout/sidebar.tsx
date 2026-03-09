@@ -42,7 +42,8 @@ const SidebarContext = createContext<{
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
   collapsed: boolean;
-}>({ mobileOpen: false, setMobileOpen: () => {}, collapsed: false });
+  setCollapsed: (v: boolean) => void;
+}>({ mobileOpen: false, setMobileOpen: () => {}, collapsed: false, setCollapsed: () => {} });
 
 export const useSidebar = () => useContext(SidebarContext);
 
@@ -51,29 +52,14 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <SidebarContext.Provider value={{ mobileOpen, setMobileOpen, collapsed }}>
+    <SidebarContext.Provider value={{ mobileOpen, setMobileOpen, collapsed, setCollapsed }}>
       {children}
-      <Sidebar
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        mobileOpen={mobileOpen}
-        setMobileOpen={setMobileOpen}
-      />
     </SidebarContext.Provider>
   );
 }
 
-function Sidebar({
-  collapsed,
-  setCollapsed,
-  mobileOpen,
-  setMobileOpen,
-}: {
-  collapsed: boolean;
-  setCollapsed: (v: boolean) => void;
-  mobileOpen: boolean;
-  setMobileOpen: (v: boolean) => void;
-}) {
+export function Sidebar() {
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
   const pathname = usePathname();
 
   // Close mobile sidebar on route change
@@ -81,27 +67,29 @@ function Sidebar({
     setMobileOpen(false);
   }, [pathname, setMobileOpen]);
 
-  const sidebarContent = (
+  const sidebarContent = (isMobile: boolean) => (
     <>
       {/* Logo */}
       <div className="flex h-14 items-center justify-between px-4">
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <span className="text-lg font-semibold tracking-tight text-accent">
             Finsa
           </span>
         )}
-        {collapsed && (
+        {collapsed && !isMobile && (
           <span className="text-lg font-semibold text-accent">F</span>
         )}
         {/* Close button on mobile */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setMobileOpen(false)}
-          className="text-foreground-secondary lg:hidden"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setMobileOpen(false)}
+            className="text-foreground-secondary"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <Separator />
@@ -126,11 +114,11 @@ function Sidebar({
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {(!collapsed || isMobile) && <span>{item.label}</span>}
             </Link>
           );
 
-          if (collapsed) {
+          if (collapsed && !isMobile) {
             return (
               <Tooltip key={item.href} delayDuration={0}>
                 <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
@@ -146,20 +134,22 @@ function Sidebar({
       <Separator />
 
       {/* Collapse toggle (desktop only) */}
-      <div className="hidden p-2 lg:block">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center text-foreground-secondary"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
+      {!isMobile && (
+        <div className="p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-full justify-center text-foreground-secondary"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      )}
     </>
   );
 
@@ -168,11 +158,11 @@ function Sidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden h-screen flex-col border-r border-border bg-background-secondary transition-all duration-200 lg:flex",
+          "hidden h-screen shrink-0 flex-col border-r border-border bg-background-secondary transition-all duration-200 lg:flex",
           collapsed ? "w-16" : "w-60"
         )}
       >
-        {sidebarContent}
+        {sidebarContent(false)}
       </aside>
 
       {/* Mobile overlay */}
@@ -190,7 +180,7 @@ function Sidebar({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {sidebarContent}
+        {sidebarContent(true)}
       </aside>
     </>
   );
