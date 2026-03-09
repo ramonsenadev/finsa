@@ -364,6 +364,67 @@ export async function deleteRecurringExpense(id: string) {
   return { success: true };
 }
 
+// ─── Accept a detection candidate as recurring ───────────────────
+
+export async function acceptRecurringCandidate(data: {
+  title: string;
+  normalizedTitle: string;
+  averageAmount: number;
+  categoryId: string | null;
+  sourceType: string;
+  dayOfMonth: number | null;
+}) {
+  const userId = await getUserId();
+
+  await prisma.recurringExpense.create({
+    data: {
+      userId,
+      name: data.title,
+      expectedAmount: data.averageAmount,
+      categoryId: data.categoryId,
+      sourceType: data.sourceType === "card" ? "card" : data.sourceType,
+      dayOfMonth: data.dayOfMonth,
+      detectionMethod: "auto",
+      isActive: true,
+    },
+  });
+
+  // Remove from dismissed if it was there
+  await prisma.dismissedRecurring.deleteMany({
+    where: { userId, normalizedTitle: data.normalizedTitle },
+  });
+
+  revalidateRecurringPaths();
+  return { success: true };
+}
+
+// ─── Dismiss a detection candidate ────────────────────────────────
+
+export async function dismissRecurringCandidate(normalizedTitle: string) {
+  const userId = await getUserId();
+
+  await prisma.dismissedRecurring.upsert({
+    where: {
+      userId_normalizedTitle: { userId, normalizedTitle },
+    },
+    update: {},
+    create: { userId, normalizedTitle },
+  });
+
+  revalidateRecurringPaths();
+  return { success: true };
+}
+
+// ─── Fetch detection candidates ───────────────────────────────────
+
+export async function fetchDetectionCandidates() {
+  const { detectRecurringPatterns } = await import(
+    "@/lib/recurring/detection-engine"
+  );
+  const userId = await getUserId();
+  return detectRecurringPatterns(userId);
+}
+
 function revalidateRecurringPaths() {
   revalidatePath("/recurring");
   revalidatePath("/");

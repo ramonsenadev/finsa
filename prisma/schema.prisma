@@ -25,6 +25,8 @@ model User {
   monthlyBudgets     MonthlyBudget[]
   monthSnapshots     MonthSnapshot[]
   csvFormats         CsvFormat[]
+  preferences        UserPreference[]
+  dismissedRecurrings DismissedRecurring[]
 
   @@map("users")
 }
@@ -245,4 +247,30 @@ model MonthSnapshot {
 
   @@unique([userId, monthRef])
   @@map("month_snapshots")
+}
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  key       String
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("user_preferences")
+}
+
+model DismissedRecurring {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  normalizedTitle String   @map("normalized_title")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, normalizedTitle])
+  @@map("dismissed_recurrings")
 }
