@@ -1,6 +1,7 @@
 "use client";
 
-import { CreditCard } from "lucide-react";
+import Link from "next/link";
+import { CreditCard, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -33,9 +34,8 @@ export function CardItem({ card, onEdit }: CardItemProps) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => onEdit(card)}
+    <Link
+      href={`/cards/${card.id}`}
       className={`group relative flex w-full flex-col gap-4 rounded-md border border-border bg-background p-5 text-left transition-shadow hover:shadow-md ${
         !card.isActive ? "opacity-50" : ""
       }`}
@@ -59,15 +59,32 @@ export function CardItem({ card, onEdit }: CardItemProps) {
             )}
           </div>
         </div>
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <Switch
-            checked={card.isActive}
-            onCheckedChange={handleToggle}
-            aria-label={card.isActive ? "Desativar cartão" : "Ativar cartão"}
-          />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit(card);
+            }}
+            className="rounded-md p-1.5 text-foreground-secondary opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+            title="Editar cartão"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <div
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Switch
+              checked={card.isActive}
+              onCheckedChange={handleToggle}
+              aria-label={card.isActive ? "Desativar cartão" : "Ativar cartão"}
+            />
+          </div>
         </div>
       </div>
 
@@ -90,6 +107,6 @@ export function CardItem({ card, onEdit }: CardItemProps) {
           Inativo
         </span>
       )}
-    </button>
+    </Link>
   );
 }
