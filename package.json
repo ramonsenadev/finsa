@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "vitest",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -34,7 +34,6 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.6",
     "@types/node": "^22.15.17",
     "@types/papaparse": "^5.3.15",
