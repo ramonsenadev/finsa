@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { upsertBudget, copyBudgetFromPreviousMonth } from "@/app/budget/actions";
 import { BudgetRow } from "./budget-row";
@@ -129,8 +130,21 @@ export function BudgetContent({
       </div>
 
       {/* Budget list */}
-      <div className="rounded-md border border-border">
-        <div className="grid grid-cols-[1fr_140px_180px_1fr] gap-4 border-b border-border px-4 py-3 text-xs font-medium uppercase tracking-wide text-foreground-secondary">
+      {totalBudget === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 px-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background-secondary">
+            <PiggyBank className="h-7 w-7 text-foreground-secondary" />
+          </div>
+          <p className="mt-4 text-base font-medium text-foreground">
+            Nenhum orçamento definido
+          </p>
+          <p className="mt-1 max-w-sm text-center text-sm text-foreground-secondary">
+            Defina limites por categoria para acompanhar seus gastos. Clique em qualquer categoria abaixo para começar.
+          </p>
+        </div>
+      ) : null}
+      <div className="overflow-x-auto rounded-md border border-border">
+        <div className="grid min-w-[600px] grid-cols-[1fr_140px_180px_1fr] gap-4 border-b border-border px-4 py-3 text-xs font-medium uppercase tracking-wide text-foreground-secondary">
           <span>Categoria</span>
           <span>Orçamento</span>
           <span>Gasto Atual</span>

@@ -372,7 +372,7 @@ export function RecurringContent({
             </p>
           </div>
         ) : (
-          <div className="rounded-lg border border-border bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-white">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useCallback } from "react";
 import { Search, ChevronLeft, ChevronRight, Plus, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ManualTransactionModal,
 } from "@/components/features/transactions/manual-transaction-modal";
+import { ShortcutsHelp } from "./shortcuts-help";
+import { MobileMenuButton } from "./sidebar";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -101,9 +105,9 @@ function ExportDropdown() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast.success("PDF exportado com sucesso");
     } catch {
-      // Could add toast here
-      console.error("Erro ao exportar PDF");
+      toast.error("Erro ao exportar PDF");
     } finally {
       setLoading(false);
     }
@@ -134,10 +138,20 @@ function ExportDropdown() {
 export function Header() {
   const [manualModalOpen, setManualModalOpen] = useState(false);
 
+  const handleNewTransaction = useCallback(() => {
+    setManualModalOpen(true);
+  }, []);
+
+  useKeyboardShortcuts({
+    onNewTransaction: handleNewTransaction,
+  });
+
   return (
     <>
-      <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6">
-        <Suspense
+      <header className="flex h-14 items-center justify-between border-b border-border bg-background px-4 md:px-6">
+        <div className="flex items-center gap-2">
+          <MobileMenuButton />
+          <Suspense
           fallback={
             <div className="flex items-center gap-1">
               <span className="mr-2 text-sm font-medium text-foreground-secondary">
@@ -149,18 +163,23 @@ export function Header() {
             </div>
           }
         >
-          <PeriodSelector />
-        </Suspense>
+            <PeriodSelector />
+          </Suspense>
+        </div>
 
-        <div className="flex items-center gap-3">
-          {/* Global search placeholder */}
-          <div className="relative w-72">
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Global search */}
+          <div className="relative hidden w-72 md:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-secondary" />
             <Input
-              placeholder="Buscar transações..."
+              data-search-input
+              placeholder="Buscar transações... ( / )"
               className="pl-9"
             />
           </div>
+
+          {/* Shortcuts help */}
+          <ShortcutsHelp />
 
           {/* Export dropdown */}
           <Suspense fallback={null}>
@@ -168,9 +187,9 @@ export function Header() {
           </Suspense>
 
           {/* Novo Lançamento button */}
-          <Button size="sm" onClick={() => setManualModalOpen(true)}>
+          <Button size="sm" onClick={handleNewTransaction}>
             <Plus className="mr-1.5 h-4 w-4" />
-            Novo Lançamento
+            <span className="hidden sm:inline">Novo Lançamento</span>
           </Button>
         </div>
       </header>

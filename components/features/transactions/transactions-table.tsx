@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
@@ -156,6 +157,7 @@ export function TransactionsTable({
     await deleteManualTransaction(deletingTxId);
     setDeleting(false);
     setDeletingTxId(null);
+    toast.success("Lançamento excluído");
     onRecategorized(); // refetch
   }
 
@@ -178,10 +180,19 @@ export function TransactionsTable({
 
       {/* Table */}
       {transactions.length === 0 ? (
-        <p className="py-12 text-center text-sm text-foreground-secondary">
-          Nenhuma transação encontrada.
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 px-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background-secondary">
+            <ArrowUpDown className="h-7 w-7 text-foreground-secondary" />
+          </div>
+          <p className="mt-4 text-base font-medium text-foreground">
+            Nenhuma transação encontrada
+          </p>
+          <p className="mt-1 text-sm text-foreground-secondary">
+            Tente ajustar os filtros ou importe um CSV para começar.
+          </p>
+        </div>
       ) : (
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -319,6 +330,7 @@ export function TransactionsTable({
             })}
           </TableBody>
         </Table>
+        </div>
       )}
 
       {/* Pagination */}

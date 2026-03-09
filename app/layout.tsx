@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
@@ -20,6 +21,14 @@ export default function RootLayout({
         <QueryProvider>
           <AppShell>{children}</AppShell>
         </QueryProvider>
+        <Toaster
+          position="bottom-right"
+          richColors
+          closeButton
+          toastOptions={{
+            style: { fontFamily: "var(--font-sans)", fontSize: "14px" },
+          }}
+        />
       </body>
     </html>
   );

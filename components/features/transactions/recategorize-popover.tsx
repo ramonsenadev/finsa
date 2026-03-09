@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,7 @@ export function RecategorizePopover({
     setApplying(true);
     await recategorizeTransaction(transactionId, selectedCategoryId, applyToAll);
     setApplying(false);
+    toast.success("Categorização salva");
     close();
     onComplete?.();
   }
