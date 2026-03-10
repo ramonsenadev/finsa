@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
 import { SkeletonIndicatorCards, SkeletonChart } from "@/components/ui/skeleton-card";
+import { MonthSelector, getCurrentMonthRef } from "@/components/ui/month-selector";
 import { IndicatorCards } from "./indicator-cards";
 import { CategoryChart } from "./category-chart";
 import { CategoryTable } from "./category-table";
@@ -20,14 +21,18 @@ import { fetchDashboardData, fetchDailyExpenses, fetchInvestmentEvolution } from
 import { formatBRL } from "@/lib/format";
 import type { RecurrenceFilter } from "@/lib/analytics/dashboard";
 
-function getCurrentMonthRef() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
 export function DashboardContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const monthRef = searchParams.get("month") || getCurrentMonthRef();
+
+  function handleMonthChange(newMonth: string) {
+    if (newMonth === getCurrentMonthRef()) {
+      router.push("/");
+    } else {
+      router.push(`/?month=${newMonth}`);
+    }
+  }
   const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>("all");
 
   const { data, isLoading, error } = useQuery({
@@ -45,47 +50,42 @@ export function DashboardContent() {
     queryFn: () => fetchInvestmentEvolution(monthRef),
   });
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <SkeletonIndicatorCards />
-        <SkeletonChart />
-        <SkeletonChart />
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <p className="text-sm text-error">
-        Erro ao carregar dados do dashboard.
-      </p>
-    );
-  }
-
-  // Empty state: no transactions at all
-  if (data.totalExpenses === 0 && data.categoryBreakdown.length === 0) {
-    return (
-      <EmptyState
-        icon={Upload}
-        title="Importe seu primeiro CSV para começar"
-        description="Importe a fatura do seu cartão de crédito ou adicione lançamentos manuais para visualizar seus gastos."
-        action={{ label: "Importar CSV", href: "/import" }}
-      />
-    );
-  }
-
   const isFiltered = recurrenceFilter !== "all";
   const filterLabel = recurrenceFilter === "recurring" ? "Fixo" : "Variável";
   const percentOfIncome =
-    data.hasIncome && data.totalIncome > 0
+    data?.hasIncome && data.totalIncome > 0
       ? (data.totalExpenses / data.totalIncome) * 100
       : null;
 
+  const isEmpty = data && data.totalExpenses === 0 && data.categoryBreakdown.length === 0;
+
   return (
     <div className="space-y-6">
-      {/* Recurrence Toggle */}
-      <RecurrenceToggle value={recurrenceFilter} onChange={setRecurrenceFilter} />
+      {/* Month selector + Recurrence Toggle — always visible */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <MonthSelector monthRef={monthRef} onChange={handleMonthChange} />
+        <RecurrenceToggle value={recurrenceFilter} onChange={setRecurrenceFilter} />
+      </div>
+
+      {isLoading ? (
+        <>
+          <SkeletonIndicatorCards />
+          <SkeletonChart />
+          <SkeletonChart />
+        </>
+      ) : error || !data ? (
+        <p className="text-sm text-error">
+          Erro ao carregar dados do dashboard.
+        </p>
+      ) : isEmpty ? (
+        <EmptyState
+          icon={Upload}
+          title="Importe seu primeiro CSV para começar"
+          description="Importe a fatura do seu cartão de crédito ou adicione lançamentos manuais para visualizar seus gastos."
+          action={{ label: "Importar CSV", href: "/import" }}
+        />
+      ) : (
+        <>
 
       {/* Indicator Cards */}
       <IndicatorCards
@@ -212,6 +212,8 @@ export function DashboardContent() {
           </Card>
         </SectionErrorBoundary>
       </div>
+      </>
+      )}
     </div>
   );
 }

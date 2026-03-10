@@ -84,9 +84,9 @@ export function DetectionReviewPanel({
   const visibleCandidates = expanded ? candidates : candidates.slice(0, 5);
 
   return (
-    <div className="rounded-lg border border-amber-300/50 bg-amber-50 p-5">
+    <div className="rounded-lg border border-warning/20 bg-warning/10 p-5">
       <div className="mb-4 flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-amber-600" />
+        <Sparkles className="h-5 w-5 text-warning" />
         <h2 className="text-base font-semibold">
           Identificamos {candidates.length} transaç
           {candidates.length === 1 ? "ão" : "ões"} que parece
@@ -138,7 +138,7 @@ export function DetectionReviewPanel({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 gap-1.5 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  className="h-8 gap-1.5 text-success hover:bg-success/10 hover:text-success"
                   onClick={() => handleAccept(candidate)}
                   disabled={isPending}
                 >
@@ -165,7 +165,7 @@ export function DetectionReviewPanel({
         <Button
           variant="ghost"
           size="sm"
-          className="mt-2 w-full text-amber-700 hover:text-amber-800"
+          className="mt-2 w-full text-warning hover:text-warning"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? (

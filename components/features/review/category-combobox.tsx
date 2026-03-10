@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { ChevronDown, Search } from "lucide-react";
 
@@ -66,17 +67,26 @@ export function CategoryCombobox({
   onSelect,
   onClose,
   autoFocus = false,
+  anchorRef,
 }: {
   categories: Category[];
   value: string | null;
   onSelect: (categoryId: string) => void;
   onClose: () => void;
   autoFocus?: boolean;
+  /** When provided, renders in a portal with fixed positioning anchored to this element */
+  anchorRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [search, setSearch] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+  } | null>(null);
 
   const options = buildCategoryOptions(categories);
 
@@ -89,6 +99,35 @@ export function CategoryCombobox({
         );
       })
     : options;
+
+  // Calculate fixed position from anchor
+  useLayoutEffect(() => {
+    if (!anchorRef?.current) return;
+    const anchor = anchorRef.current;
+    const rect = anchor.getBoundingClientRect();
+    const popoverHeight = 300;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < popoverHeight && rect.top > popoverHeight;
+    const left = Math.min(rect.left, window.innerWidth - 288 - 16);
+
+    if (openUp) {
+      setPosition({ bottom: window.innerHeight - rect.top + 4, left });
+    } else {
+      setPosition({ top: rect.bottom + 4, left });
+    }
+  }, [anchorRef]);
+
+  // Close on scroll so the popover doesn't float away from its anchor
+  useEffect(() => {
+    if (!anchorRef) return;
+    function handleScroll(e: Event) {
+      // Ignore scrolls inside the popover itself (e.g. category list)
+      if (popoverRef.current?.contains(e.target as Node)) return;
+      onClose();
+    }
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [anchorRef, onClose]);
 
   useEffect(() => {
     if (autoFocus) {
@@ -107,6 +146,23 @@ export function CategoryCombobox({
     const item = list.children[highlightIndex] as HTMLElement | undefined;
     item?.scrollIntoView({ block: "nearest" });
   }, [highlightIndex]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!anchorRef) return;
+    function handleMouseDown(e: MouseEvent) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        anchorRef?.current &&
+        !anchorRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [anchorRef, onClose]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     switch (e.key) {
@@ -137,12 +193,21 @@ export function CategoryCombobox({
     }
   }
 
-  return (
+  const content = (
     <div
-      className="absolute z-50 mt-1 w-72 rounded-md border border-border bg-popover shadow-lg"
+      ref={popoverRef}
+      className={cn(
+        "w-72 rounded-md border border-border bg-popover shadow-lg",
+        anchorRef ? "fixed z-50" : "absolute z-50 mt-1"
+      )}
+      style={
+        anchorRef && position
+          ? { top: position.top, bottom: position.bottom, left: position.left }
+          : undefined
+      }
       onKeyDown={handleKeyDown}
     >
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2 dark:bg-input/30">
         <Search className="h-3.5 w-3.5 text-foreground-secondary" />
         <input
           ref={inputRef}
@@ -184,6 +249,12 @@ export function CategoryCombobox({
       </div>
     </div>
   );
+
+  if (anchorRef) {
+    return createPortal(content, document.body);
+  }
+
+  return content;
 }
 
 export function CategorySelect({
@@ -221,13 +292,24 @@ export function CategorySelect({
         type="button"
         onClick={onToggle}
         className={cn(
-          "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm transition-colors hover:border-accent/50",
-          isOpen && "border-accent ring-2 ring-accent/20",
+          "flex h-9 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors hover:border-accent/50 dark:bg-input/30",
+          isOpen && "border-ring ring-2 ring-ring",
           !value && "text-foreground-secondary"
         )}
       >
         <span className="max-w-[140px] truncate">
-          {categoryName ?? "Selecionar..."}
+          {categoryName ? (
+            categoryName.includes(" › ") ? (
+              <>
+                <span className="text-foreground-secondary">{categoryName.split(" › ")[0]} ›</span>{" "}
+                <span className="font-medium text-foreground">{categoryName.split(" › ")[1]}</span>
+              </>
+            ) : (
+              <span className="font-medium text-foreground">{categoryName}</span>
+            )
+          ) : (
+            "Selecionar..."
+          )}
         </span>
         <ChevronDown className="h-3.5 w-3.5 text-foreground-secondary" />
       </button>

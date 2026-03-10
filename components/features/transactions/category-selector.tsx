@@ -122,7 +122,7 @@ export function CategorySelectorDropdown({
       className="w-72 rounded-md border border-border bg-popover shadow-lg"
       onKeyDown={handleKeyDown}
     >
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2 dark:bg-input/30">
         <Search className="h-3.5 w-3.5 text-foreground-secondary" />
         <input
           ref={inputRef}
@@ -200,13 +200,24 @@ export function CategorySelector({
         type="button"
         onClick={() => setIsOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm transition-colors hover:border-accent/50",
-          isOpen && "border-accent ring-2 ring-accent/20",
+          "flex h-9 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors hover:border-accent/50 dark:bg-input/30",
+          isOpen && "border-ring ring-2 ring-ring",
           !value && "text-foreground-secondary"
         )}
       >
         <span className="max-w-[180px] truncate">
-          {categoryName ?? "Selecionar..."}
+          {categoryName ? (
+            categoryName.includes(" › ") ? (
+              <>
+                <span className="text-foreground-secondary">{categoryName.split(" › ")[0]} ›</span>{" "}
+                <span className="font-medium text-foreground">{categoryName.split(" › ")[1]}</span>
+              </>
+            ) : (
+              <span className="font-medium text-foreground">{categoryName}</span>
+            )
+          ) : (
+            "Selecionar..."
+          )}
         </span>
         <ChevronDown className="h-3.5 w-3.5 text-foreground-secondary" />
       </button>

@@ -43,8 +43,8 @@ export function CardSummaryCards({ summary, monthRef }: CardSummaryCardsProps) {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-50">
-                <Calculator className="h-4 w-4 text-blue-600" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent/10">
+                <Calculator className="h-4 w-4 text-accent" />
               </div>
               <div>
                 <p className="text-xs text-foreground-secondary">Média mensal</p>
@@ -55,8 +55,8 @@ export function CardSummaryCards({ summary, monthRef }: CardSummaryCardsProps) {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-50">
-                <Trophy className="h-4 w-4 text-amber-600" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-warning/10">
+                <Trophy className="h-4 w-4 text-warning" />
               </div>
               <div>
                 <p className="text-xs text-foreground-secondary">Maior gasto</p>

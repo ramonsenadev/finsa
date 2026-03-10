@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   RefreshCw,
   Check,
@@ -12,7 +12,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -40,6 +40,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EditRecurringModal } from "./edit-recurring-modal";
+import { getIconComponent } from "@/components/features/categories/icon-picker";
 import type { CategoryItem } from "@/components/features/transactions/category-selector";
 import {
   confirmRecurringSuggestion,
@@ -66,10 +67,6 @@ function formatCurrency(value: number): string {
   });
 }
 
-function parseAmountInput(value: string): number {
-  const cleaned = value.replace(/\./g, "").replace(",", ".");
-  return parseFloat(cleaned) || 0;
-}
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -96,6 +93,12 @@ export function RecurringContent({
   const [adjustedAmounts, setAdjustedAmounts] = useState<
     Record<string, string>
   >({});
+
+  // Sync local state when server re-renders with fresh data (e.g. after router.refresh())
+  useEffect(() => {
+    setPending(initialData.pending);
+    setRecurring(initialData.recurring);
+  }, [initialData]);
   const [editingRow, setEditingRow] = useState<RecurringExpenseRow | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -115,7 +118,7 @@ export function RecurringContent({
 
   function getAmount(id: string, defaultAmount: number): number {
     const adjusted = adjustedAmounts[id];
-    if (adjusted !== undefined) return parseAmountInput(adjusted);
+    if (adjusted !== undefined) return (parseFloat(adjusted) || 0);
     return defaultAmount;
   }
 
@@ -230,8 +233,8 @@ export function RecurringContent({
       {/* Summary card */}
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#8B5CF6]/10">
-            <RefreshCw className="h-5 w-5 text-[#8B5CF6]" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-recurring/10">
+            <RefreshCw className="h-5 w-5 text-recurring" />
           </div>
           <div>
             <p className="text-sm text-foreground-secondary">
@@ -251,10 +254,10 @@ export function RecurringContent({
 
       {/* Suggestion panel */}
       {pending.length > 0 && (
-        <div className="rounded-lg border border-[#8B5CF6]/30 bg-[#8B5CF6]/5 p-5">
+        <div className="rounded-lg border border-recurring/30 bg-recurring/5 p-5">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-[#8B5CF6]" />
+              <AlertCircle className="h-5 w-5 text-recurring" />
               <h2 className="text-base font-semibold">
                 Você tem {pending.length} gasto
                 {pending.length > 1 ? "s" : ""} recorrente
@@ -266,7 +269,7 @@ export function RecurringContent({
               size="sm"
               onClick={handleConfirmAll}
               disabled={isPending}
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+              className="bg-recurring text-white hover:bg-recurring/90"
             >
               <CheckCheck className="mr-1.5 h-4 w-4" />
               Confirmar todos
@@ -290,21 +293,18 @@ export function RecurringContent({
 
                 <div className="flex items-center gap-2">
                   <div className="w-32">
-                    <Input
+                    <CurrencyInput
                       value={
                         adjustedAmounts[suggestion.id] ??
-                        suggestion.expectedAmount
-                          .toFixed(2)
-                          .replace(".", ",")
+                        String(suggestion.expectedAmount)
                       }
-                      onChange={(e) =>
+                      onValueChange={(val) =>
                         setAdjustedAmounts((prev) => ({
                           ...prev,
-                          [suggestion.id]: e.target.value,
+                          [suggestion.id]: val,
                         }))
                       }
-                      className="h-8 text-right text-sm"
-                      inputMode="decimal"
+                      className="h-8 text-sm"
                     />
                   </div>
 
@@ -314,7 +314,7 @@ export function RecurringContent({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                          className="h-8 w-8 p-0 text-success hover:bg-success/10 hover:text-success"
                           onClick={() => handleConfirm(suggestion)}
                           disabled={isPending}
                         >
@@ -348,8 +348,8 @@ export function RecurringContent({
 
       {/* No pending message */}
       {pending.length === 0 && recurring.some((r) => r.isActive) && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-emerald-700">
+        <div className="rounded-lg border border-success/20 bg-success/10 p-4">
+          <div className="flex items-center gap-2 text-success">
             <Check className="h-5 w-5" />
             <p className="text-sm font-medium">
               Todos os gastos recorrentes de {monthLabel} estão em dia.
@@ -372,7 +372,7 @@ export function RecurringContent({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
+          <div className="bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -394,13 +394,29 @@ export function RecurringContent({
                   >
                     <TableCell className="font-medium">{row.name}</TableCell>
                     <TableCell>
-                      {row.parentCategoryName
-                        ? `${row.parentCategoryName} › ${row.categoryName}`
-                        : row.categoryName ?? (
-                            <span className="text-foreground-secondary">
-                              —
-                            </span>
-                          )}
+                      {row.categoryName ? (() => {
+                        const Icon = row.categoryIcon ? getIconComponent(row.categoryIcon) : null;
+                        return (
+                          <span className="inline-flex items-center gap-1.5">
+                            {Icon && (
+                              <Icon
+                                className="h-3.5 w-3.5 shrink-0"
+                                style={row.categoryColor ? { color: row.categoryColor } : undefined}
+                              />
+                            )}
+                            {row.parentCategoryName ? (
+                              <span>
+                                <span className="text-foreground-secondary">{row.parentCategoryName} ›</span>{" "}
+                                {row.categoryName}
+                              </span>
+                            ) : (
+                              <span>{row.categoryName}</span>
+                            )}
+                          </span>
+                        );
+                      })() : (
+                        <span className="text-foreground-secondary">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.expectedAmount)}
@@ -418,6 +434,11 @@ export function RecurringContent({
                             ? "secondary"
                             : "outline"
                         }
+                        className={
+                          row.detectionMethod !== "auto"
+                            ? "border-accent/40 bg-accent/10 text-accent"
+                            : undefined
+                        }
                       >
                         {row.detectionMethod === "auto"
                           ? "Automático"
@@ -432,22 +453,22 @@ export function RecurringContent({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
+                        <button
+                          type="button"
                           onClick={() => handleEdit(row)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors"
+                          title="Editar"
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 text-error hover:text-error"
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setDeleteId(row.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-secondary hover:bg-error/10 hover:text-error transition-colors"
+                          title="Excluir"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </button>
                       </div>
                     </TableCell>
                   </TableRow>

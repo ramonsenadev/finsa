@@ -29,6 +29,8 @@ export interface RecurringExpenseRow {
   categoryId: string | null;
   categoryName: string | null;
   parentCategoryName: string | null;
+  categoryIcon: string | null;
+  categoryColor: string | null;
   expectedAmount: number;
   dayOfMonth: number | null;
   sourceType: string;
@@ -75,7 +77,9 @@ export async function fetchRecurringPageData(): Promise<RecurringPageData> {
           id: true,
           name: true,
           parentId: true,
-          parent: { select: { name: true } },
+          icon: true,
+          color: true,
+          parent: { select: { name: true, icon: true, color: true } },
         },
       },
     },
@@ -137,6 +141,8 @@ export async function fetchRecurringPageData(): Promise<RecurringPageData> {
     categoryId: r.categoryId,
     categoryName: r.category?.name ?? null,
     parentCategoryName: r.category?.parent?.name ?? null,
+    categoryIcon: r.category?.parent?.icon ?? r.category?.icon ?? null,
+    categoryColor: r.category?.parent?.color ?? r.category?.color ?? null,
     expectedAmount: toNumber(r.expectedAmount),
     dayOfMonth: r.dayOfMonth,
     sourceType: r.sourceType,

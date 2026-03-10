@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
+import { getIconComponent } from "@/components/features/categories/icon-picker";
 import {
   Table,
   TableBody,
@@ -64,15 +65,10 @@ export function TopExpenses({ data, showRecurringBadge = true }: TopExpensesProp
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
-                {tx.categoryColor && (
-                  <span
-                    className="inline-block h-3 w-3 rounded-full"
-                    style={{ backgroundColor: tx.categoryColor }}
-                  />
-                )}
-                {tx.categoryIcon && (
-                  <span className="text-sm">{tx.categoryIcon}</span>
-                )}
+                {tx.categoryIcon && (() => {
+                  const Icon = getIconComponent(tx.categoryIcon);
+                  return <Icon className="h-4 w-4" style={{ color: tx.categoryColor ?? undefined }} />;
+                })()}
                 <span className="text-foreground-secondary">
                   {tx.categoryName ?? "Sem categoria"}
                 </span>

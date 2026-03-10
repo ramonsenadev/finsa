@@ -36,7 +36,7 @@ export function CardItem({ card, onEdit }: CardItemProps) {
   return (
     <Link
       href={`/cards/${card.id}`}
-      className={`group relative flex w-full flex-col gap-4 rounded-md border border-border bg-background p-5 text-left transition-shadow hover:shadow-md ${
+      className={`group relative flex w-full flex-col gap-4 rounded-md border border-border bg-card p-5 text-left transition-shadow hover:shadow-md ${
         !card.isActive ? "opacity-50" : ""
       }`}
     >

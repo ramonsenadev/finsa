@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,14 +45,6 @@ interface EditRecurringModalProps {
   ) => Promise<void>;
 }
 
-function formatAmountForInput(value: number): string {
-  return value.toFixed(2).replace(".", ",");
-}
-
-function parseAmountInput(value: string): number {
-  const cleaned = value.replace(/\./g, "").replace(",", ".");
-  return parseFloat(cleaned) || 0;
-}
 
 export function EditRecurringModal({
   open,
@@ -70,7 +63,7 @@ export function EditRecurringModal({
   useEffect(() => {
     if (open && recurring) {
       setName(recurring.name);
-      setAmount(formatAmountForInput(recurring.expectedAmount));
+      setAmount(String(recurring.expectedAmount));
       setCategoryId(recurring.categoryId);
       setDayOfMonth(recurring.dayOfMonth ? String(recurring.dayOfMonth) : "");
       setSourceType(recurring.sourceType);
@@ -95,7 +88,7 @@ export function EditRecurringModal({
     await onSave(recurring.id, {
       name,
       categoryId,
-      expectedAmount: parseAmountInput(amount),
+      expectedAmount: parseFloat(amount) || 0,
       dayOfMonth: dayOfMonth ? parseInt(dayOfMonth, 10) : null,
       sourceType,
     });
@@ -120,12 +113,11 @@ export function EditRecurringModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="rec-amount">Valor esperado (R$)</Label>
-            <Input
+            <Label htmlFor="rec-amount">Valor esperado</Label>
+            <CurrencyInput
               id="rec-amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              inputMode="decimal"
+              onValueChange={setAmount}
             />
           </div>
 

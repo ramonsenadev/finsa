@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatBRL } from "@/lib/format";
+import { getIconComponent } from "@/components/features/categories/icon-picker";
 import type { CategoryBreakdown } from "@/lib/analytics/dashboard";
 
 interface CategoryTableProps {
@@ -41,13 +42,10 @@ export function CategoryTable({ data }: CategoryTableProps) {
             <TableRow key={cat.categoryId}>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  {cat.color && (
-                    <span
-                      className="inline-block h-3 w-3 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                  )}
-                  {cat.icon && <span className="text-sm">{cat.icon}</span>}
+                  {cat.icon && (() => {
+                    const Icon = getIconComponent(cat.icon);
+                    return <Icon className="h-4 w-4" style={{ color: cat.color ?? undefined }} />;
+                  })()}
                   <span className="font-medium">{cat.name}</span>
                 </div>
               </TableCell>

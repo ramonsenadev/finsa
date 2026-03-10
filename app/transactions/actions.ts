@@ -372,5 +372,6 @@ function revalidatePaths() {
   revalidatePath("/transactions");
   revalidatePath("/transactions/review");
   revalidatePath("/cards", "layout");
+  revalidatePath("/recurring");
   revalidatePath("/");
 }

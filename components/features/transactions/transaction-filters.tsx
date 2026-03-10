@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -89,8 +90,8 @@ function MultiSelectDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex min-w-[140px] items-center justify-between gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm transition-colors hover:border-accent/50",
-          open && "border-accent ring-1 ring-accent/20",
+          "flex min-w-[140px] items-center justify-between gap-2 rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm shadow-xs transition-colors hover:border-accent/50 dark:bg-input/30",
+          open && "border-ring ring-2 ring-ring",
           selected.length === 0 && "text-foreground-secondary"
         )}
       >
@@ -115,7 +116,7 @@ function MultiSelectDropdown({
         )}
       </button>
       {open && (
-        <div className="absolute left-0 z-50 mt-1 max-h-60 w-56 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+        <div className="absolute left-0 z-50 mt-1 max-h-60 w-56 overflow-y-auto rounded-md border border-border/50 bg-popover p-1 shadow-lg dark:border-input/50">
           {options.map((opt) => (
             <button
               key={opt.id}
@@ -123,14 +124,14 @@ function MultiSelectDropdown({
               onClick={() => toggle(opt.id)}
               className={cn(
                 "flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted",
-                selected.includes(opt.id) && "bg-accent/10 text-accent font-medium"
+                selected.includes(opt.id) && "bg-accent/15 text-accent font-medium"
               )}
             >
               <div
                 className={cn(
                   "flex h-4 w-4 items-center justify-center rounded border",
                   selected.includes(opt.id)
-                    ? "border-accent bg-accent text-white"
+                    ? "border-accent bg-accent text-accent-foreground"
                     : "border-border"
                 )}
               >
@@ -194,7 +195,7 @@ export function TransactionFilters({
   const parentCategories = categories.filter((c) => c.parentId === null);
   const categoryOptions = parentCategories.map((c) => ({
     id: c.id,
-    label: `${c.icon ? c.icon + " " : ""}${c.name}`,
+    label: c.name,
   }));
 
   const hasFilters =
@@ -230,7 +231,7 @@ export function TransactionFilters({
                 type="date"
                 value={filters.dateStart ?? ""}
                 onChange={(e) => update({ dateStart: e.target.value || undefined })}
-                className="h-[34px] rounded-md border border-border bg-background pl-7 pr-2 text-sm"
+                className="h-[34px] rounded-md border border-input bg-transparent pl-7 pr-2 text-sm shadow-xs dark:bg-input/30"
               />
             </div>
             <span className="text-xs text-foreground-secondary">até</span>
@@ -238,7 +239,7 @@ export function TransactionFilters({
               type="date"
               value={filters.dateEnd ?? ""}
               onChange={(e) => update({ dateEnd: e.target.value || undefined })}
-              className="h-[34px] rounded-md border border-border bg-background px-2 text-sm"
+              className="h-[34px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs dark:bg-input/30"
             />
           </div>
         </div>
@@ -282,10 +283,10 @@ export function TransactionFilters({
             Valor
           </label>
           <div className="flex items-center gap-1.5">
-            <Input
-              type="number"
+            <CurrencyInput
               value={minInput}
-              onChange={(e) => setMinInput(e.target.value)}
+              onValueChange={setMinInput}
+              showPrefix={false}
               onBlur={() =>
                 update({ minAmount: minInput ? parseFloat(minInput) : undefined })
               }
@@ -294,13 +295,13 @@ export function TransactionFilters({
                   update({ minAmount: minInput ? parseFloat(minInput) : undefined });
               }}
               placeholder="Mín"
-              className="h-[34px] w-20 text-sm"
+              className="h-[34px] w-24 text-sm"
             />
             <span className="text-xs text-foreground-secondary">–</span>
-            <Input
-              type="number"
+            <CurrencyInput
               value={maxInput}
-              onChange={(e) => setMaxInput(e.target.value)}
+              onValueChange={setMaxInput}
+              showPrefix={false}
               onBlur={() =>
                 update({ maxAmount: maxInput ? parseFloat(maxInput) : undefined })
               }
@@ -309,7 +310,7 @@ export function TransactionFilters({
                   update({ maxAmount: maxInput ? parseFloat(maxInput) : undefined });
               }}
               placeholder="Máx"
-              className="h-[34px] w-20 text-sm"
+              className="h-[34px] w-24 text-sm"
             />
           </div>
         </div>
@@ -325,7 +326,7 @@ export function TransactionFilters({
               const val = e.target.value as "" | "rule" | "ai" | "manual";
               update({ categorizationMethod: val || undefined });
             }}
-            className="h-[34px] rounded-md border border-border bg-background px-2 text-sm"
+            className="h-[34px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs dark:bg-input/30"
           >
             <option value="">Todos</option>
             <option value="rule">Regra</option>
@@ -347,7 +348,7 @@ export function TransactionFilters({
                 isRecurring: val === "" ? undefined : val === "true",
               });
             }}
-            className="h-[34px] rounded-md border border-border bg-background px-2 text-sm"
+            className="h-[34px] rounded-md border border-input bg-transparent px-2 text-sm shadow-xs dark:bg-input/30"
           >
             <option value="">Todos</option>
             <option value="true">Sim</option>
@@ -379,10 +380,14 @@ export function TransactionFilters({
         </div>
 
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="text-foreground-secondary">
-            <X className="mr-1 h-3.5 w-3.5" />
+          <button
+            type="button"
+            onClick={clearAll}
+            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm text-foreground-secondary transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
             Limpar filtros
-          </Button>
+          </button>
         )}
       </div>
 

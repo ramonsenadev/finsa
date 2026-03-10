@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/format";
+import { getIconComponent } from "@/components/features/categories/icon-picker";
 import type {
   TemporalComparisonData,
   ComparisonCategory,
@@ -113,9 +114,18 @@ function CategoryRow({
               </button>
             )}
             {!hasChildren && depth === 0 && <span className="w-4.5" />}
-            {category.color && (
+            {category.icon && (() => {
+              const Icon = getIconComponent(category.icon);
+              return (
+                <Icon
+                  className="h-4 w-4 shrink-0"
+                  style={{ color: category.color ?? undefined }}
+                />
+              );
+            })()}
+            {!category.icon && category.color && (
               <span
-                className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
+                className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: category.color }}
               />
             )}
@@ -194,26 +204,26 @@ export function VariationTable({ data }: VariationTableProps) {
   const lastLabel = formatShortMonth(data.endMonth);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
+    <div className="overflow-hidden rounded-md border border-border">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/50">
           <tr className="border-b border-border text-left">
-            <th className="pb-2 pl-3 text-xs font-medium text-foreground-secondary">
+            <th className="h-10 px-3 text-xs font-medium text-foreground-secondary">
               Categoria
             </th>
-            <th className="pb-2 px-3 text-right text-xs font-medium text-foreground-secondary">
+            <th className="h-10 px-3 text-right text-xs font-medium text-foreground-secondary">
               {firstLabel} (R$)
             </th>
-            <th className="pb-2 px-3 text-right text-xs font-medium text-foreground-secondary">
+            <th className="h-10 px-3 text-right text-xs font-medium text-foreground-secondary">
               {lastLabel} (R$)
             </th>
-            <th className="pb-2 px-3 text-right text-xs font-medium text-foreground-secondary">
+            <th className="h-10 px-3 text-right text-xs font-medium text-foreground-secondary">
               Delta (R$)
             </th>
-            <th className="pb-2 px-3 text-right text-xs font-medium text-foreground-secondary">
+            <th className="h-10 px-3 text-right text-xs font-medium text-foreground-secondary">
               Delta %
             </th>
-            <th className="pb-2 px-3 text-center text-xs font-medium text-foreground-secondary">
+            <th className="h-10 px-3 text-center text-xs font-medium text-foreground-secondary">
               Tendência
             </th>
           </tr>

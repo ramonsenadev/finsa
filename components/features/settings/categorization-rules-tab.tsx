@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Search } from "lucide-react";
@@ -84,7 +83,7 @@ export function CategorizationRulesTab({ rules, categories }: CategorizationRule
             : "Nenhuma regra de categorização cadastrada."}
         </div>
       ) : (
-        <div className="rounded-md border border-border">
+        <div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -112,7 +111,14 @@ export function CategorizationRulesTab({ rules, categories }: CategorizationRule
                   </TableCell>
                   <TableCell className="text-sm">{rule.categoryName}</TableCell>
                   <TableCell>
-                    <Badge variant={rule.source === "ai" ? "secondary" : "default"}>
+                    <Badge
+                      variant="outline"
+                      className={
+                        rule.source === "ai"
+                          ? "border-warning/40 bg-warning/10 text-warning"
+                          : "border-accent/40 bg-accent/10 text-accent"
+                      }
+                    >
                       {SOURCE_LABELS[rule.source] ?? rule.source}
                     </Badge>
                   </TableCell>
@@ -126,22 +132,22 @@ export function CategorizationRulesTab({ rules, categories }: CategorizationRule
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
+                      <button
+                        type="button"
                         onClick={() => setEditingRule(rule)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors"
+                        title="Editar"
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-error hover:text-error"
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(rule.id)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-secondary hover:bg-error/10 hover:text-error transition-colors"
+                        title="Excluir"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -119,7 +119,7 @@ export function StepPreview({
       )}
 
       {/* Transaction preview table */}
-      <div className="rounded-lg border border-border">
+      <div>
         <Table>
           <TableHeader>
             <TableRow>

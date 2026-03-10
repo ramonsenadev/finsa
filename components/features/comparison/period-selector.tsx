@@ -117,8 +117,8 @@ export function PeriodSelector({
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
               className={cn(
-                "rounded-md border border-border bg-background px-3 py-1.5 text-sm",
-                "focus:outline-none focus:ring-2 focus:ring-accent/30",
+                "rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs dark:bg-input/30",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
               )}
             />
           </div>
@@ -131,8 +131,8 @@ export function PeriodSelector({
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
               className={cn(
-                "rounded-md border border-border bg-background px-3 py-1.5 text-sm",
-                "focus:outline-none focus:ring-2 focus:ring-accent/30",
+                "rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs dark:bg-input/30",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
               )}
             />
           </div>

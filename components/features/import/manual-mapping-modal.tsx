@@ -92,7 +92,7 @@ export function ManualMappingModal({
         </div>
 
         {/* Raw preview */}
-        <div className="mb-6 overflow-x-auto rounded-md border border-border">
+        <div className="mb-6">
           <Table>
             <TableHeader>
               <TableRow>

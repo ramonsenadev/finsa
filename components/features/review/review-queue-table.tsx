@@ -90,6 +90,9 @@ export function ReviewQueueTable({
   const [categorizedCount, setCategorizedCount] = useState(0);
   const [loading, setLoading] = useState<Set<string>>(new Set());
   const tableRef = useRef<HTMLDivElement>(null);
+  const lastSelectedCount = useRef(1);
+  const batchButtonRef = useRef<HTMLButtonElement>(null);
+  const rowButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   // Sync with new data from server
   useEffect(() => {
@@ -233,6 +236,10 @@ export function ReviewQueueTable({
     row?.scrollIntoView({ block: "nearest" });
   }, [activeRow]);
 
+  // Freeze the displayed count so it doesn't flash "0" before hiding
+  if (selected.size > 0) lastSelectedCount.current = selected.size;
+  const displayCount = lastSelectedCount.current;
+
   if (transactions.length === 0 && categorizedCount === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-foreground-secondary">
@@ -284,31 +291,29 @@ export function ReviewQueueTable({
           </span>
         </div>
 
-        {/* Batch action */}
-        {selected.size > 0 && (
-          <div className="relative">
-            <Button
-              size="sm"
-              onClick={() => setBatchComboboxOpen((v) => !v)}
-              className="gap-1.5"
-            >
-              Categorizar {selected.size} selecionado{selected.size > 1 ? "s" : ""}
-            </Button>
-            {batchComboboxOpen && (
-              <div className="absolute right-0 top-full z-50">
-                <CategoryCombobox
-                  categories={categories}
-                  value={null}
-                  onSelect={(catId) =>
-                    handleCategorize(Array.from(selected), catId)
-                  }
-                  onClose={() => setBatchComboboxOpen(false)}
-                  autoFocus
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {/* Batch action — always rendered to prevent layout shift */}
+        <div className={cn(selected.size === 0 && "invisible")}>
+          <Button
+            ref={batchButtonRef}
+            size="sm"
+            onClick={() => setBatchComboboxOpen((v) => !v)}
+            className="gap-1.5"
+          >
+            Categorizar {displayCount} selecionado{displayCount > 1 ? "s" : ""}
+          </Button>
+          {batchComboboxOpen && selected.size > 0 && (
+            <CategoryCombobox
+              categories={categories}
+              value={null}
+              onSelect={(catId) =>
+                handleCategorize(Array.from(selected), catId)
+              }
+              onClose={() => setBatchComboboxOpen(false)}
+              anchorRef={batchButtonRef}
+              autoFocus
+            />
+          )}
+        </div>
       </div>
 
       <Table>
@@ -412,7 +417,7 @@ export function ReviewQueueTable({
                 {loading.has(tx.id) ? (
                   <Loader2 className="h-4 w-4 animate-spin text-accent" />
                 ) : (
-                  <div className="relative flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5">
                     {/* Accept AI suggestion button */}
                     {tx.categorizationMethod === "ai" && tx.categoryId && (
                       <button
@@ -428,6 +433,10 @@ export function ReviewQueueTable({
                       </button>
                     )}
                     <button
+                      ref={(el) => {
+                        if (el) rowButtonRefs.current.set(index, el);
+                        else rowButtonRefs.current.delete(index);
+                      }}
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -437,9 +446,9 @@ export function ReviewQueueTable({
                         setActiveRow(index);
                       }}
                       className={cn(
-                        "rounded-md border border-border px-2.5 py-1.5 text-sm transition-colors hover:border-accent/50",
+                        "rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm shadow-xs transition-colors hover:border-accent/50 dark:bg-input/30",
                         openComboboxRow === index &&
-                          "border-accent ring-2 ring-accent/20"
+                          "border-ring ring-2 ring-ring"
                       )}
                     >
                       Categorizar
@@ -450,6 +459,7 @@ export function ReviewQueueTable({
                         value={null}
                         onSelect={(catId) => handleCategorize([tx.id], catId)}
                         onClose={() => setOpenComboboxRow(null)}
+                        anchorRef={{ current: rowButtonRefs.current.get(index) ?? null }}
                         autoFocus
                       />
                     )}

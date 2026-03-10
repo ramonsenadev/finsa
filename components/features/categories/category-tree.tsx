@@ -192,8 +192,8 @@ function ParentRow({
     category.children.reduce((sum, c) => sum + c._count.transactions, 0);
 
   return (
-    <div className={!isLast || (isExpanded && category.children.length > 0) ? "border-b border-border" : ""}>
-      <div className="group flex items-center gap-3 px-4 py-3 hover:bg-background-secondary/50 transition-colors">
+    <div>
+      <div className={`group flex items-center gap-3 px-4 py-3 bg-card hover:bg-background-secondary transition-colors ${!isLast ? "border-b border-input/50" : ""}`}>
         <button
           type="button"
           onClick={onToggle}
@@ -221,7 +221,7 @@ function ParentRow({
 
         <span
           className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: category.color ?? "#9CA3AF" }}
+          style={{ backgroundColor: category.color ?? "var(--color-foreground-secondary)" }}
         />
 
         {category.isSystem && (
@@ -287,7 +287,7 @@ function ChildRow({
 
   return (
     <div
-      className={`group flex items-center gap-3 pl-12 pr-4 py-2.5 hover:bg-background-secondary/50 transition-colors ${
+      className={`group flex items-center gap-3 pl-12 pr-4 py-2.5 bg-background hover:bg-background-secondary/50 transition-colors ${
         !isLast || !parentIsLast ? "border-b border-border/50" : ""
       }`}
     >
@@ -301,11 +301,11 @@ function ChildRow({
         />
       </span>
 
-      <span className="text-sm text-foreground">{category.name}</span>
+      <span className="text-sm text-foreground-secondary">{category.name}</span>
 
       <span
         className="h-2 w-2 shrink-0 rounded-full"
-        style={{ backgroundColor: category.color ?? "#9CA3AF" }}
+        style={{ backgroundColor: category.color ?? "var(--color-foreground-secondary)" }}
       />
 
       {category.isSystem && (

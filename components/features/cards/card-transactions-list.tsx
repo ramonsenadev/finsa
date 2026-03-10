@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL } from "@/lib/format";
 import { RecategorizePopover } from "@/components/features/transactions/recategorize-popover";
@@ -104,12 +105,12 @@ export function CardTransactionsList({
             <select
               value={filters.categoryId ?? ""}
               onChange={handleCategoryFilter}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              className="rounded-md border border-input bg-transparent px-2 py-1.5 text-sm shadow-xs dark:bg-input/30"
             >
               <option value="">Todas</option>
               {parentCategories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.icon ? `${c.icon} ` : ""}{c.name}
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -122,7 +123,7 @@ export function CardTransactionsList({
             <select
               value={filters.isRecurring === undefined ? "" : String(filters.isRecurring)}
               onChange={handleRecurringFilter}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              className="rounded-md border border-input bg-transparent px-2 py-1.5 text-sm shadow-xs dark:bg-input/30"
             >
               <option value="">Todos</option>
               <option value="true">Recorrentes</option>
@@ -135,24 +136,24 @@ export function CardTransactionsList({
               <label className="mb-1 block text-xs text-foreground-secondary">
                 Valor mín.
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={minAmountInput}
-                onChange={(e) => setMinAmountInput(e.target.value)}
-                placeholder="0"
-                className="w-24 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                onValueChange={setMinAmountInput}
+                showPrefix={false}
+                placeholder="Mín"
+                className="h-8 w-24 text-sm"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs text-foreground-secondary">
                 Valor máx.
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={maxAmountInput}
-                onChange={(e) => setMaxAmountInput(e.target.value)}
-                placeholder="∞"
-                className="w-24 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                onValueChange={setMaxAmountInput}
+                showPrefix={false}
+                placeholder="Máx"
+                className="h-8 w-24 text-sm"
               />
             </div>
             <Button size="sm" variant="outline" onClick={handleAmountFilter}>

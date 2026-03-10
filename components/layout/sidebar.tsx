@@ -25,9 +25,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/comparison", label: "Comparação", icon: TrendingUp },
-  { href: "/transactions", label: "Transações", icon: ArrowLeftRight },
+  { href: "/transactions", label: "Transações", icon: ArrowLeftRight, exact: true },
   { href: "/transactions/review", label: "Fila de Revisão", icon: ClipboardList },
   { href: "/cards", label: "Cartões", icon: CreditCard },
   { href: "/recurring", label: "Recorrentes", icon: Repeat },
@@ -35,7 +35,7 @@ const navItems = [
   { href: "/import", label: "Import", icon: Upload },
   { href: "/budget", label: "Orçamento", icon: PiggyBank },
   { href: "/settings", label: "Configurações", icon: Settings },
-];
+] as const;
 
 // Context so the header can trigger sidebar open on mobile
 const SidebarContext = createContext<{
@@ -70,15 +70,13 @@ export function Sidebar() {
   const sidebarContent = (isMobile: boolean) => (
     <>
       {/* Logo */}
-      <div className="flex h-14 items-center justify-between px-4">
-        {(!collapsed || isMobile) && (
-          <span className="text-lg font-semibold tracking-tight text-accent">
-            Finsa
-          </span>
-        )}
-        {collapsed && !isMobile && (
-          <span className="text-lg font-semibold text-accent">F</span>
-        )}
+      <div className="flex h-14 items-center justify-between overflow-hidden px-4">
+        <Link href="/" className="text-lg font-semibold tracking-tight text-accent whitespace-nowrap">
+          F<span className={cn(
+            "transition-opacity duration-200",
+            collapsed && !isMobile ? "opacity-0" : "opacity-100"
+          )}>insa</span>
+        </Link>
         {/* Close button on mobile */}
         {isMobile && (
           <Button
@@ -97,24 +95,26 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {navItems.map((item) => {
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+          const isActive = "exact" in item && item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(item.href + "/");
 
           const linkContent = (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex h-9 items-center gap-3 overflow-hidden rounded-md px-3 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-accent/10 text-accent"
                   : "text-foreground-secondary hover:bg-border/50 hover:text-foreground"
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {(!collapsed || isMobile) && <span>{item.label}</span>}
+              <span className={cn(
+                "whitespace-nowrap transition-opacity duration-200",
+                collapsed && !isMobile ? "opacity-0" : "opacity-100"
+              )}>{item.label}</span>
             </Link>
           );
 
@@ -159,7 +159,7 @@ export function Sidebar() {
       <aside
         className={cn(
           "hidden h-screen shrink-0 flex-col border-r border-border bg-background-secondary transition-all duration-200 lg:flex",
-          collapsed ? "w-16" : "w-60"
+          collapsed ? "w-14" : "w-60"
         )}
       >
         {sidebarContent(false)}

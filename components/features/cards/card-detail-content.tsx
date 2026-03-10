@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { MonthSelector, getCurrentMonthRef } from "@/components/ui/month-selector";
 import { ISSUER_LABELS, ISSUER_COLORS, type Issuer } from "@/lib/validations/card";
 import {
   fetchCardDetail,
@@ -21,11 +22,6 @@ import { CardSummaryCards } from "./card-summary-cards";
 import { CardCategoryBreakdown } from "./card-category-breakdown";
 import { CardImportsHistory } from "./card-imports-history";
 import { CardTransactionsList } from "./card-transactions-list";
-
-function getCurrentMonthRef(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
 
 interface CardDetailContentProps {
   cardId: string;
@@ -157,25 +153,7 @@ export function CardDetailContent({ cardId }: CardDetailContentProps) {
         </div>
 
         {/* Month selector */}
-        <select
-          value={monthRef}
-          onChange={(e) => handleMonthChange(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
-        >
-          {(availableMonths ?? [getCurrentMonthRef()]).map((m) => {
-            const [y, mo] = m.split("-");
-            const date = new Date(parseInt(y), parseInt(mo) - 1);
-            const label = date.toLocaleDateString("pt-BR", {
-              month: "long",
-              year: "numeric",
-            });
-            return (
-              <option key={m} value={m}>
-                {label.charAt(0).toUpperCase() + label.slice(1)}
-              </option>
-            );
-          })}
-        </select>
+        <MonthSelector monthRef={monthRef} onChange={handleMonthChange} />
       </div>
 
       {/* Evolution chart */}

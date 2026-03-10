@@ -77,14 +77,14 @@ export function DataTab() {
             </p>
 
             {!showWipeConfirm ? (
-              <Button
-                variant="outline"
-                className="mt-4 border-error/30 text-error hover:bg-error/5 hover:text-error"
+              <button
+                type="button"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-error/30 px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error/10 hover:text-error"
                 onClick={() => setShowWipeConfirm(true)}
               >
-                <Trash2 className="mr-1.5 h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
                 Limpar todos os dados
-              </Button>
+              </button>
             ) : (
               <div className="mt-4 space-y-3 rounded-md border border-error/20 bg-error/5 p-4">
                 <p className="text-sm font-medium text-error">
@@ -102,25 +102,25 @@ export function DataTab() {
                       placeholder="Digite CONFIRMAR"
                     />
                   </div>
-                  <Button
-                    variant="outline"
-                    className="border-error/30 text-error hover:bg-error/10 hover:text-error"
+                  <button
+                    type="button"
+                    className="inline-flex items-center rounded-md border border-error/30 px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error/10 hover:text-error disabled:pointer-events-none disabled:opacity-50"
                     onClick={handleWipe}
                     disabled={confirmText !== "CONFIRMAR" || wiping}
                   >
                     {wiping ? "Excluindo..." : "Confirmar exclusão"}
-                  </Button>
+                  </button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
+                  className="inline-flex items-center rounded-md px-2.5 py-1.5 text-sm text-foreground-secondary transition-colors hover:bg-muted hover:text-foreground"
                   onClick={() => {
                     setShowWipeConfirm(false);
                     setConfirmText("");
                   }}
                 >
                   Cancelar
-                </Button>
+                </button>
               </div>
             )}
           </div>

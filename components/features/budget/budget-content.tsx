@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MonthSelector } from "@/components/ui/month-selector";
 import { upsertBudget, copyBudgetFromPreviousMonth } from "@/app/budget/actions";
 import { BudgetRow } from "./budget-row";
 
@@ -27,17 +28,6 @@ function formatCurrency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function navigateMonth(monthRef: string, delta: number) {
-  const [year, month] = monthRef.split("-").map(Number);
-  const d = new Date(year, month - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function formatMonthLabel(monthRef: string) {
-  const [year, month] = monthRef.split("-").map(Number);
-  const date = new Date(year, month - 1, 1);
-  return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-}
 
 export function BudgetContent({
   monthRef,
@@ -78,25 +68,11 @@ export function BudgetContent({
     <div className="space-y-6">
       {/* Month selector */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToMonth(navigateMonth(monthRef, -1))}
-          >
-            <ChevronLeft />
-          </Button>
-          <span className="min-w-[160px] text-center text-base font-medium capitalize">
-            {formatMonthLabel(monthRef)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => goToMonth(navigateMonth(monthRef, 1))}
-          >
-            <ChevronRight />
-          </Button>
-        </div>
+        <MonthSelector
+          monthRef={monthRef}
+          onChange={goToMonth}
+          disableFuture={false}
+        />
 
         <Button variant="outline" size="sm" onClick={handleCopyPrevious}>
           Copiar do mês anterior
@@ -144,7 +120,7 @@ export function BudgetContent({
         </div>
       ) : null}
       <div className="overflow-x-auto rounded-md border border-border">
-        <div className="grid min-w-[600px] grid-cols-[1fr_140px_180px_1fr] gap-4 border-b border-border px-4 py-3 text-xs font-medium uppercase tracking-wide text-foreground-secondary">
+        <div className="grid min-w-[600px] grid-cols-[1fr_140px_180px_1fr] gap-4 border-b border-border bg-muted/50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-foreground-secondary">
           <span>Categoria</span>
           <span>Orçamento</span>
           <span>Gasto Atual</span>
@@ -163,18 +139,3 @@ export function BudgetContent({
   );
 }
 
-function ChevronLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 4l-4 4 4 4" />
-    </svg>
-  );
-}
-
-function ChevronRight() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 4l4 4-4 4" />
-    </svg>
-  );
-}

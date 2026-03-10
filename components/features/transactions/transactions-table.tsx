@@ -170,7 +170,7 @@ export function TransactionsTable({
           <span className="font-medium text-foreground">{total}</span>{" "}
           transações
         </p>
-        <p className="text-sm">
+        <p className="text-sm text-foreground-secondary">
           Total:{" "}
           <span className="font-semibold text-foreground">
             {formatBRL(totalAmount)}
@@ -405,9 +405,9 @@ export function TransactionsTable({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-error text-white hover:bg-error/90"
             >
               {deleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>

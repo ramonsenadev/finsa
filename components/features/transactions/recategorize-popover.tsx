@@ -127,8 +127,8 @@ export function RecategorizePopover({
         className={cn(
           "rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted",
           currentCategoryName
-            ? "text-foreground"
-            : "text-foreground-secondary italic",
+            ? "text-foreground-secondary"
+            : "text-foreground-secondary/60 italic",
           isOpen && "bg-muted ring-1 ring-accent/30"
         )}
       >

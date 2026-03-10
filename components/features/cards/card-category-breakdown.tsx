@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL } from "@/lib/format";
+import { getIconComponent } from "@/components/features/categories/icon-picker";
 import type { CardCategoryBreakdown as CategoryData } from "@/lib/analytics/card-detail";
 
 interface CardCategoryBreakdownProps {
@@ -27,7 +28,10 @@ export function CardCategoryBreakdown({ data }: CardCategoryBreakdownProps) {
               <div key={cat.categoryId} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    {cat.icon && <span className="text-sm">{cat.icon}</span>}
+                    {cat.icon && (() => {
+                      const Icon = getIconComponent(cat.icon);
+                      return <Icon className="h-4 w-4" style={{ color: cat.color ?? undefined }} />;
+                    })()}
                     <span className="font-medium text-foreground">{cat.name}</span>
                   </div>
                   <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
@@ -54,15 +55,6 @@ interface ManualTransactionModalProps {
   onSaved?: () => void;
 }
 
-function formatAmountForInput(value: number): string {
-  return value.toFixed(2).replace(".", ",");
-}
-
-function parseAmountInput(value: string): number {
-  // Accept both "1.234,56" and "1234.56" formats
-  const cleaned = value.replace(/\./g, "").replace(",", ".");
-  return parseFloat(cleaned) || 0;
-}
 
 export function ManualTransactionModal({
   open,
@@ -107,7 +99,7 @@ export function ManualTransactionModal({
         const d = new Date(editingTransaction.date);
         setDate(d.toISOString().slice(0, 10));
         setDescription(editingTransaction.description);
-        setAmount(formatAmountForInput(editingTransaction.amount));
+        setAmount(String(editingTransaction.amount));
         setCategoryId(editingTransaction.categoryId);
         setPaymentMethod(editingTransaction.paymentMethod ?? "pix");
         setIsRecurring(editingTransaction.isRecurring);
@@ -141,7 +133,7 @@ export function ManualTransactionModal({
     const data = {
       date: new Date(date + "T12:00:00"),
       description,
-      amount: parseAmountInput(amount),
+      amount: parseFloat(amount) || 0,
       categoryId: categoryId ?? "",
       paymentMethod,
       isRecurring,
@@ -216,12 +208,10 @@ export function ManualTransactionModal({
           {/* Valor */}
           <div className="space-y-2">
             <Label htmlFor="tx-amount">Valor (R$)</Label>
-            <Input
+            <CurrencyInput
               id="tx-amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0,00"
-              inputMode="decimal"
+              onValueChange={setAmount}
             />
             {errors.amount && (
               <p className="text-sm text-error">{errors.amount[0]}</p>
@@ -263,7 +253,7 @@ export function ManualTransactionModal({
           </div>
 
           {/* Recorrente */}
-          <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-4 py-3 dark:bg-input/30">
             <Label htmlFor="tx-recurring" className="cursor-pointer">
               Gasto recorrente
             </Label>

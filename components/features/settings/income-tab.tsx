@@ -89,7 +89,7 @@ export function IncomeTab({ incomes }: IncomeTabProps) {
           Nenhuma fonte de renda cadastrada.
         </div>
       ) : (
-        <div className="rounded-md border border-border">
+        <div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -125,22 +125,22 @@ export function IncomeTab({ incomes }: IncomeTabProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
+                      <button
+                        type="button"
                         onClick={() => handleEdit(income)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors"
+                        title="Editar"
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-error hover:text-error"
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(income.id)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-secondary hover:bg-error/10 hover:text-error transition-colors"
+                        title="Excluir"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>
