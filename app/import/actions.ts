@@ -109,11 +109,18 @@ export async function parseCsvFile(
   const descriptions = parseResult.transactions.map((t) => t.originalTitle);
   const categorizationPreview = await categorizeDryRun(userId, descriptions);
 
-  // Serialize transactions for client
-  const serializedTransactions = parseResult.transactions.map((t, i) => ({
+  // Serialize transactions for client (exclude payments from main list)
+  const paymentCount = parseResult.transactions.filter((t) => t.isPayment).length;
+  const nonPaymentTransactions = parseResult.transactions.filter((t) => !t.isPayment);
+  const nonPaymentDuplicateFlags = duplicateFlags.filter(
+    (_, i) => !parseResult.transactions[i].isPayment
+  );
+
+  const serializedTransactions = nonPaymentTransactions.map((t, i) => ({
     ...t,
     date: t.date.toISOString(),
-    isDuplicate: duplicateFlags[i],
+    isDuplicate: nonPaymentDuplicateFlags[i],
+    isPayment: false,
     categorization: categorizationPreview.results.has(t.originalTitle)
       ? {
           categoryId: categorizationPreview.results.get(t.originalTitle)!
@@ -131,6 +138,7 @@ export async function parseCsvFile(
     transactions: serializedTransactions,
     stats: {
       ...parseResult.stats,
+      parsed: nonPaymentTransactions.length,
       dateRange: parseResult.stats.dateRange
         ? {
             from: parseResult.stats.dateRange.from.toISOString(),
@@ -144,7 +152,8 @@ export async function parseCsvFile(
       byAi: categorizationPreview.byAi,
       manual: categorizationPreview.manual,
     },
-    duplicateCount: duplicateFlags.filter(Boolean).length,
+    duplicateCount: nonPaymentDuplicateFlags.filter(Boolean).length,
+    paymentCount,
     fileName,
   };
 }
@@ -216,15 +225,18 @@ export async function processImport(
     return { error: "Nenhuma transação encontrada no CSV" };
   }
 
+  // Filter out credit card bill payments (transfers, not expenses)
+  const nonPaymentTransactions = parseResult.transactions.filter((t) => !t.isPayment);
+
   // Check duplicates
   const duplicateFlags = await checkDuplicates(
     userId,
     cardId,
-    parseResult.transactions
+    nonPaymentTransactions
   );
 
   // Filter out duplicates if requested
-  const transactionsToImport = parseResult.transactions.filter(
+  const transactionsToImport = nonPaymentTransactions.filter(
     (_, i) => !skipDuplicates || !duplicateFlags[i]
   );
 

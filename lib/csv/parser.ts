@@ -7,6 +7,18 @@ import type {
 
 const INSTALLMENT_REGEX = /\s*-\s*Parcela\s+(\d+)\/(\d+)$/;
 
+// Patterns that identify credit card bill payments (transfers, not expenses).
+// These should be excluded from import to avoid double-counting.
+const PAYMENT_PATTERNS = [
+  /pagamento\s+(recebido|fatura|de\s+fatura)/i,
+  /pgto\s+(debito\s+conta|fatura)/i,
+  /pagamento\s+efetuado/i,
+];
+
+function isPaymentEntry(title: string): boolean {
+  return PAYMENT_PATTERNS.some((p) => p.test(title));
+}
+
 function parseDate(value: string, format: string): Date | null {
   if (!value || !value.trim()) return null;
 
@@ -125,6 +137,7 @@ export function parseCsv(
       installmentCurrent,
       installmentTotal,
       rawLine,
+      isPayment: isPaymentEntry(title),
     });
   }
 

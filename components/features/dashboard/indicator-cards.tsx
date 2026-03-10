@@ -24,9 +24,11 @@ function DeltaBadge({
   invertTrend?: boolean;
 }) {
   if (previous === 0) return null;
-  const delta = ((current - previous) / previous) * 100;
+  // Use Math.abs(previous) to avoid sign inversion when previous is negative
+  // (e.g. Saldo Livre going from -15000 to -200 is an improvement, not -98%)
+  const delta = ((current - previous) / Math.abs(previous)) * 100;
   const isPositive = delta > 0;
-  const improved = invertTrend ? !isPositive : isPositive;
+  const improved = invertTrend ? current < previous : current > previous;
 
   return (
     <span

@@ -6,6 +6,7 @@ export interface ParsedTransaction {
   installmentCurrent?: number;
   installmentTotal?: number;
   rawLine: string;
+  isPayment: boolean; // credit card bill payment — should be excluded from import
 }
 
 export interface ParseStats {

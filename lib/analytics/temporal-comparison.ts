@@ -108,12 +108,13 @@ export async function getTemporalComparison(
   const { start } = getMonthDateRange(months[0]);
   const { end } = getMonthDateRange(months[months.length - 1]);
 
-  // Fetch all transactions in the range grouped by month+category
+  // Fetch all transactions in the range grouped by month+category (excluding bill payments)
   const transactions = await prisma.transaction.findMany({
     where: {
       userId,
       date: { gte: start, lt: end },
       categoryId: { not: null },
+      category: { name: { not: "Pagamento fatura" } },
     },
     select: {
       date: true,

@@ -61,21 +61,34 @@ function getMonthDateRange(monthRef: string) {
   return { start, end };
 }
 
+// Bump this whenever snapshot computation logic changes (filters, aggregation rules, etc.)
+// All snapshots computed before this date will be recomputed.
+const SNAPSHOT_LOGIC_VERSION = new Date("2026-03-10T13:00:00Z");
+
+// Exclude credit card bill payments from expense calculations.
+// These are transfers between accounts, not actual expenses.
+const PAYMENT_CATEGORY_FILTER = {
+  OR: [
+    { category: null },
+    { category: { name: { not: "Pagamento fatura" } } },
+  ],
+};
+
 async function computeMonthTotals(userId: string, monthRef: string) {
   const { start, end } = getMonthDateRange(monthRef);
 
   const txAgg = await prisma.transaction.aggregate({
-    where: { userId, date: { gte: start, lt: end } },
+    where: { userId, date: { gte: start, lt: end }, ...PAYMENT_CATEGORY_FILTER },
     _sum: { amount: true },
   });
 
   const cardAgg = await prisma.transaction.aggregate({
-    where: { userId, date: { gte: start, lt: end }, sourceType: "card" },
+    where: { userId, date: { gte: start, lt: end }, sourceType: "card", ...PAYMENT_CATEGORY_FILTER },
     _sum: { amount: true },
   });
 
   const manualAgg = await prisma.transaction.aggregate({
-    where: { userId, date: { gte: start, lt: end }, sourceType: "manual" },
+    where: { userId, date: { gte: start, lt: end }, sourceType: "manual", ...PAYMENT_CATEGORY_FILTER },
     _sum: { amount: true },
   });
 
@@ -110,11 +123,14 @@ async function getOrComputeSnapshot(userId: string, monthRef: string) {
   });
 
   if (existing) {
-    // Check if any transaction was updated after snapshot was computed
-    const newerTx = await prisma.transaction.findFirst({
-      where: { userId, date: { gte: start, lt: end }, updatedAt: { gt: existing.computedAt } },
-      select: { id: true },
-    });
+    // Invalidate if computation logic changed or if data was updated
+    const isLogicStale = existing.computedAt < SNAPSHOT_LOGIC_VERSION;
+    const newerTx = isLogicStale
+      ? { id: "stale" } // force recompute
+      : await prisma.transaction.findFirst({
+          where: { userId, date: { gte: start, lt: end }, updatedAt: { gt: existing.computedAt } },
+          select: { id: true },
+        });
     if (!newerTx) {
       return {
         totalIncome: toNumber(existing.totalIncome),
@@ -185,15 +201,15 @@ export async function getMonthlyDashboard(
   let current = snapshot;
   if (recurrenceFilter !== "all") {
     const filteredAgg = await prisma.transaction.aggregate({
-      where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
+      where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere, ...PAYMENT_CATEGORY_FILTER },
       _sum: { amount: true },
     });
     const filteredCardAgg = await prisma.transaction.aggregate({
-      where: { userId, date: { gte: start, lt: end }, sourceType: "card", ...recurrenceWhere },
+      where: { userId, date: { gte: start, lt: end }, sourceType: "card", ...recurrenceWhere, ...PAYMENT_CATEGORY_FILTER },
       _sum: { amount: true },
     });
     const filteredManualAgg = await prisma.transaction.aggregate({
-      where: { userId, date: { gte: start, lt: end }, sourceType: "manual", ...recurrenceWhere },
+      where: { userId, date: { gte: start, lt: end }, sourceType: "manual", ...recurrenceWhere, ...PAYMENT_CATEGORY_FILTER },
       _sum: { amount: true },
     });
     current = {
@@ -210,17 +226,17 @@ export async function getMonthlyDashboard(
   });
   const hasIncome = incomeCount > 0;
 
-  // Category breakdown: group transactions by parent category
+  // Category breakdown: group transactions by parent category (excluding payments)
   const txByCategory = await prisma.transaction.groupBy({
     by: ["categoryId"],
-    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
+    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere, ...PAYMENT_CATEGORY_FILTER },
     _sum: { amount: true },
   });
 
   // Previous month by category
   const prevTxByCategory = await prisma.transaction.groupBy({
     by: ["categoryId"],
-    where: { userId, date: { gte: prevRange.start, lt: prevRange.end }, ...recurrenceWhere },
+    where: { userId, date: { gte: prevRange.start, lt: prevRange.end }, ...recurrenceWhere, ...PAYMENT_CATEGORY_FILTER },
     _sum: { amount: true },
   });
   const prevByCatMap = new Map(
@@ -299,9 +315,9 @@ export async function getMonthlyDashboard(
     }))
     .sort((a, b) => b.total - a.total);
 
-  // Top 10 expenses
+  // Top 10 expenses (excluding payments)
   const topTransactions = await prisma.transaction.findMany({
-    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere },
+    where: { userId, date: { gte: start, lt: end }, ...recurrenceWhere, ...PAYMENT_CATEGORY_FILTER },
     orderBy: { amount: "desc" },
     take: topN,
     include: { category: true },

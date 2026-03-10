@@ -25,6 +25,7 @@ export type PreviewTransaction = {
   installmentTotal?: number;
   rawLine: string;
   isDuplicate: boolean;
+  isPayment: boolean;
   categorization: {
     categoryId: string;
     categoryName: string;
@@ -49,6 +50,7 @@ export type ParseResultData = {
     manual: number;
   };
   duplicateCount: number;
+  paymentCount: number;
   fileName: string;
 };
 

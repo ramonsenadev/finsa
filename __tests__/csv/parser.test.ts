@@ -52,6 +52,24 @@ describe("parseCsv", () => {
       expect(pagamento.amount).toBe(-7844.64);
     });
 
+    it("flags bill payments with isPayment", () => {
+      const csv = readFixture("nubank.csv");
+      const result = parseCsv(csv, NUBANK_FORMAT);
+
+      // "Pagamento recebido" is a bill payment
+      const pagamento = result.transactions[9];
+      expect(pagamento.originalTitle).toBe("Pagamento recebido");
+      expect(pagamento.isPayment).toBe(true);
+
+      // Regular transactions are not payments
+      const regular = result.transactions[0];
+      expect(regular.isPayment).toBe(false);
+
+      // Refunds/discounts are not payments
+      const antecipacao = result.transactions[7];
+      expect(antecipacao.isPayment).toBe(false);
+    });
+
     it("extracts installments from title", () => {
       const csv = readFixture("nubank.csv");
       const result = parseCsv(csv, NUBANK_FORMAT);
@@ -130,6 +148,17 @@ describe("parseCsv", () => {
 
       const pagamento = result.transactions[9];
       expect(pagamento.amount).toBe(-1087.73);
+    });
+
+    it("flags Itaú bill payments with isPayment", () => {
+      const csv = readFixture("itau.csv");
+      const result = parseCsv(csv, ITAU_FORMAT);
+
+      const pagamento = result.transactions[9];
+      expect(pagamento.originalTitle).toBe("PAGAMENTO FATURA");
+      expect(pagamento.isPayment).toBe(true);
+
+      expect(result.transactions[0].isPayment).toBe(false);
     });
 
     it("extracts installments from Itaú format", () => {

@@ -9,6 +9,7 @@ import {
   Tag,
   ArrowLeft,
   Loader2,
+  Ban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -48,17 +49,19 @@ export function StepPreview({
 }) {
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
-  const expenses = data.transactions
+  const importable = data.transactions.filter((t) => !t.isPayment);
+
+  const expenses = importable
     .filter((t) => t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const credits = data.transactions
+  const credits = importable
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const importableCount = skipDuplicates
-    ? data.transactions.filter((t) => !t.isDuplicate).length
-    : data.transactions.length;
+    ? importable.filter((t) => !t.isDuplicate).length
+    : importable.length;
 
   return (
     <div className="space-y-6">
@@ -103,6 +106,21 @@ export function StepPreview({
           value={`${data.categorization.byRules} regras, ${data.categorization.manual} manual`}
         />
       </div>
+
+      {/* Payment exclusion notice */}
+      {data.paymentCount > 0 && (
+        <div className="flex items-start gap-3 rounded-md bg-muted px-4 py-3 text-sm">
+          <Ban className="mt-0.5 size-4 shrink-0 text-foreground-secondary" />
+          <div>
+            <p className="font-medium text-foreground">
+              {data.paymentCount} pagamento{data.paymentCount > 1 ? "s" : ""} de fatura excluído{data.paymentCount > 1 ? "s" : ""}
+            </p>
+            <p className="mt-0.5 text-foreground-secondary">
+              Pagamentos de fatura são transferências entre contas e não representam gastos.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Duplicate control */}
       {data.duplicateCount > 0 && (

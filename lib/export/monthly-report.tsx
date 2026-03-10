@@ -495,12 +495,13 @@ function TopExpensesPage({ expenses }: { expenses: TopExpense[] }) {
     );
   }
 
-  // Compute daily averages from expenses
-  const weekdays = expenses.filter((e) => {
+  // Compute daily averages from variable expenses only (exclude recurring)
+  const variableExpenses = expenses.filter((e) => !e.isRecurring);
+  const weekdays = variableExpenses.filter((e) => {
     const d = new Date(e.date).getDay();
     return d >= 1 && d <= 5;
   });
-  const weekends = expenses.filter((e) => {
+  const weekends = variableExpenses.filter((e) => {
     const d = new Date(e.date).getDay();
     return d === 0 || d === 6;
   });
