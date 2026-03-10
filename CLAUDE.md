@@ -67,7 +67,9 @@ types/                # Tipos TypeScript compartilhados
 ## Design System
 
 - **Estética:** Notion/Asana-like — limpo, espaçado, tipografia hierárquica
-- **Paleta:** Background #FFFFFF/#F9FAFB, Text #111827/#6B7280, Accent #6366F1, Success #10B981, Warning #F59E0B, Error #EF4444, Recurring #8B5CF6
+- **Tema:** Suporta claro, escuro e auto (next-themes com class strategy). Todas as cores são via CSS custom properties (--background, --foreground, --border, etc.) mapeadas no Tailwind. NUNCA usar cores hardcoded (ex: text-gray-900, bg-white) — sempre usar tokens semânticos (text-foreground, bg-background, bg-muted, border-border, etc.)
+- **Paleta Light:** Background #FFFFFF/#F9FAFB, Text #111827/#6B7280, Accent Indigo #6366F1, Success #10B981, Warning #F59E0B, Error #EF4444, Recurring Violet #8B5CF6
+- **Paleta Dark:** Background #0F1117/#1A1D27, Text #F1F2F4/#9CA3AF, Accent Indigo #818CF8, Success #34D399, Warning #FBBF24, Error #F87171, Recurring Violet #A78BFA
 - **Font:** Inter, 14px base
 - **Spacing:** escala de 4px (4, 8, 12, 16, 24, 32, 48, 64)
 - **Border radius:** 8px cards/modais, 6px inputs/botões
@@ -81,6 +83,7 @@ types/                # Tipos TypeScript compartilhados
 - IA recebe APENAS descrições de transação, nunca valores ou dados pessoais
 - MonthSnapshot é on-demand: recalcula quando dashboard é acessado
 - Detecção de recorrência: 3+ meses consecutivos, ±10% tolerância (configurável)
+- Todos os componentes DEVEM usar classes Tailwind semânticas (bg-background, text-foreground, bg-muted, border-border, text-muted-foreground) ao invés de cores diretas. Gráficos Recharts devem ler o tema ativo via useTheme() e aplicar cores dinâmicas. Export PDF é sempre estilo claro, independente do tema.
 
 ## Notas Next.js 16
 
