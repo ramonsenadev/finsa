@@ -268,9 +268,32 @@ export async function getMonthlyDashboard(
     { name: string; icon: string | null; color: string | null; total: number; budgetAmount: number | null; previousTotal: number | null }
   >();
 
+  const UNCATEGORIZED_KEY = "__uncategorized__";
+
   for (const t of txByCategory) {
     const catId = t.categoryId;
-    if (!catId) continue;
+    const amount = toNumber(t._sum.amount);
+    const prevAmount = prevByCatMap.get(catId) ?? 0;
+
+    // Uncategorized transactions
+    if (!catId) {
+      const existing = parentAgg.get(UNCATEGORIZED_KEY);
+      if (existing) {
+        existing.total += amount;
+        existing.previousTotal = (existing.previousTotal ?? 0) + prevAmount;
+      } else {
+        parentAgg.set(UNCATEGORIZED_KEY, {
+          name: "Sem categoria",
+          icon: "CircleDashed",
+          color: "#9CA3AF",
+          total: amount,
+          budgetAmount: null,
+          previousTotal: prevAmount || null,
+        });
+      }
+      continue;
+    }
+
     const cat = catMap.get(catId);
     if (!cat) continue;
 
@@ -279,8 +302,6 @@ export async function getMonthlyDashboard(
     const parentId = parentCat.id;
 
     const existing = parentAgg.get(parentId);
-    const amount = toNumber(t._sum.amount);
-    const prevAmount = prevByCatMap.get(catId) ?? 0;
 
     if (existing) {
       existing.total += amount;
