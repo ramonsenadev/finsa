@@ -10,7 +10,9 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
+import { useTheme } from "next-themes";
 import { formatBRL } from "@/lib/format";
+import { getChartColors } from "@/lib/chart-theme";
 import type { CategoryBreakdown } from "@/lib/analytics/dashboard";
 
 interface CategoryChartProps {
@@ -18,8 +20,6 @@ interface CategoryChartProps {
   totalIncome: number;
   hasIncome: boolean;
 }
-
-const DEFAULT_COLOR = "#6366f1";
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: CategoryBreakdown }> }) {
   if (!active || !payload?.[0]) return null;
@@ -43,6 +43,9 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 }
 
 export function CategoryChart({ data, totalIncome, hasIncome }: CategoryChartProps) {
+  const { resolvedTheme } = useTheme();
+  const colors = getChartColors(resolvedTheme);
+
   if (data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-foreground-secondary">
@@ -68,7 +71,7 @@ export function CategoryChart({ data, totalIncome, hasIncome }: CategoryChartPro
         <XAxis
           type="number"
           tickFormatter={(v: number) => formatBRL(v)}
-          tick={{ fontSize: 11, fill: "#6b7280" }}
+          tick={{ fontSize: 11, fill: colors.tickFill }}
           axisLine={false}
           tickLine={false}
           domain={[0, maxValue * 1.1]}
@@ -77,14 +80,14 @@ export function CategoryChart({ data, totalIncome, hasIncome }: CategoryChartPro
           type="category"
           dataKey="displayName"
           width={130}
-          tick={{ fontSize: 12, fill: "#111827" }}
+          tick={{ fontSize: 12, fill: colors.tickFillStrong }}
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: colors.cursorFill }} />
         <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={24}>
           {chartData.map((entry) => (
-            <Cell key={entry.categoryId} fill={entry.color || DEFAULT_COLOR} />
+            <Cell key={entry.categoryId} fill={entry.color || colors.accentPrimary} />
           ))}
         </Bar>
         {/* Budget reference lines */}
@@ -94,7 +97,7 @@ export function CategoryChart({ data, totalIncome, hasIncome }: CategoryChartPro
               <ReferenceLine
                 key={`budget-${entry.categoryId}`}
                 x={entry.budgetAmount}
-                stroke="#f59e0b"
+                stroke={colors.warningStroke}
                 strokeDasharray="4 4"
                 strokeWidth={2}
               />

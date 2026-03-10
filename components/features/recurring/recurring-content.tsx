@@ -228,7 +228,7 @@ export function RecurringContent({
   return (
     <div className="space-y-8">
       {/* Summary card */}
-      <div className="rounded-lg border border-border bg-white p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#8B5CF6]/10">
             <RefreshCw className="h-5 w-5 text-[#8B5CF6]" />
@@ -277,7 +277,7 @@ export function RecurringContent({
             {pending.map((suggestion) => (
               <div
                 key={suggestion.id}
-                className="flex items-center gap-3 rounded-md border border-border bg-white px-4 py-3"
+                className="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{suggestion.name}</p>
@@ -362,7 +362,7 @@ export function RecurringContent({
       <div>
         <h2 className="mb-3 text-lg font-semibold">Recorrentes cadastrados</h2>
         {recurring.length === 0 ? (
-          <div className="rounded-lg border border-border bg-white p-8 text-center">
+          <div className="rounded-lg border border-border bg-card p-8 text-center">
             <CalendarClock className="mx-auto mb-3 h-10 w-10 text-foreground-secondary/50" />
             <p className="text-foreground-secondary">
               Nenhum gasto recorrente cadastrado.
@@ -372,7 +372,7 @@ export function RecurringContent({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

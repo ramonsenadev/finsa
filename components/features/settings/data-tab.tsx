@@ -44,7 +44,7 @@ export function DataTab() {
   return (
     <div className="space-y-6">
       {/* Export */}
-      <div className="rounded-lg border border-border bg-white p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <h3 className="mb-2 text-base font-semibold">Exportar Dados</h3>
         <p className="mb-4 text-sm text-foreground-secondary">
           Faça download de todos os seus dados em formato JSON para backup.
@@ -61,7 +61,7 @@ export function DataTab() {
       </div>
 
       {/* Wipe */}
-      <div className="rounded-lg border border-error/30 bg-white p-5">
+      <div className="rounded-lg border border-error/30 bg-card p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10">
             <AlertTriangle className="h-5 w-5 text-error" />

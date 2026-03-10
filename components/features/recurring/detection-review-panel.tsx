@@ -99,7 +99,7 @@ export function DetectionReviewPanel({
         {visibleCandidates.map((candidate) => (
           <div
             key={candidate.normalizedTitle}
-            className="rounded-md border border-border bg-white px-4 py-3"
+            className="rounded-md border border-border bg-card px-4 py-3"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
