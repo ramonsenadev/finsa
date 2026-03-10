@@ -85,7 +85,7 @@ export function CategoryChart({ data, totalIncome, hasIncome }: CategoryChartPro
           tickLine={false}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: colors.cursorFill }} />
-        <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={24}>
+        <Bar dataKey="total" radius={6} barSize={24}>
           {chartData.map((entry) => (
             <Cell key={entry.categoryId} fill={entry.color || colors.accentPrimary} />
           ))}

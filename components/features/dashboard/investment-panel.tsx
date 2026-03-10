@@ -262,7 +262,7 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                   tickLine={false}
                   width={100}
                 />
-                <Bar dataKey="amount" radius={[0, 4, 4, 0]} barSize={20}>
+                <Bar dataKey="amount" radius={6} barSize={20}>
                   {data.breakdown.map((entry) => (
                     <Cell
                       key={entry.category}
