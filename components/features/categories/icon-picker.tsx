@@ -47,6 +47,14 @@ export function getIconComponent(name: string): LucideIcon {
   return ICON_MAP[name] ?? CircleDot;
 }
 
+export function DynamicIcon({
+  name,
+  ...props
+}: { name: string } & React.ComponentProps<LucideIcon>) {
+  const Icon = ICON_MAP[name] ?? CircleDot;
+  return <Icon {...props} />;
+}
+
 interface IconPickerProps {
   value: string;
   onChange: (icon: string) => void;

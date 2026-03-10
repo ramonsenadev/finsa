@@ -81,7 +81,7 @@ export function CategoryFormModal({
       setParentId(preselectedParentId ?? null);
     }
     setErrors({});
-  }, [editingCategory, open, preselectedParentId]);
+  }, [editingCategory, open, preselectedParentId, parentCategories]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

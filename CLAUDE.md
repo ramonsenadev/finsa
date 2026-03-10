@@ -4,54 +4,74 @@ Aplicação web local-first para categorização e análise de gastos familiares
 
 ## Stack
 
-- **Framework:** Next.js 16 (App Router, Server Actions, Turbopack)
-- **Linguagem:** TypeScript (strict mode)
-- **Banco:** PostgreSQL 16 (Docker)
-- **ORM:** Prisma
-- **UI:** shadcn/ui + Tailwind CSS
-- **Charts:** Recharts
-- **State:** TanStack Query
-- **Validação:** Zod
-- **CSV:** Papaparse
-- **Export PDF:** @react-pdf/renderer
-- **IA (opcional):** Anthropic Claude API (Haiku) para categorização
+- **Framework:** Next.js 16.1.6 (App Router, Server Actions, Turbopack)
+- **Linguagem:** TypeScript 5.8 (strict mode)
+- **Banco:** PostgreSQL 16 (Docker Compose)
+- **ORM:** Prisma 6.6
+- **UI:** shadcn/ui (new-york style) + Tailwind CSS 4.1 + Radix UI
+- **Charts:** Recharts 2.15
+- **State:** TanStack Query 5
+- **Validação:** Zod 3.24
+- **CSV:** Papaparse 5.5
+- **Export PDF:** @react-pdf/renderer 4.3
+- **Toasts:** Sonner 2
+- **Temas:** next-themes 0.4 (light/dark/auto)
+- **Icons:** Lucide React
+- **IA (opcional):** Anthropic Claude API (Haiku) via @anthropic-ai/sdk
 
 ## Comandos
 
 ```bash
-npm run dev          # Dev server (localhost:3000)
+npm run dev          # Dev server (localhost:3000, Turbopack)
 npm run build        # Build de produção
-npm run db:push      # Push schema Prisma
-npm run db:migrate   # Rodar migrations
-npm run db:seed      # Seed categorias padrão + CsvFormats
-npm run db:studio    # Prisma Studio
-npm run lint         # ESLint
-npm run test         # Vitest
+npm run start        # Servir build de produção
+npm run lint         # ESLint (0 errors esperado, warnings ok)
+npm run test         # Vitest (79 testes)
+npm run db:push      # Push schema Prisma (dev rápido)
+npm run db:migrate   # Rodar migrations (produção)
+npm run db:seed      # Seed categorias, formatos CSV, regras
+npm run db:studio    # Prisma Studio (GUI do banco)
 ```
 
 ## Estrutura
 
 ```
 app/                  # Rotas Next.js App Router
-  (dashboard)/        # Dashboard principal (rota raiz)
-  cards/              # CRUD cartões
-  transactions/       # Listagem com filtros
+  (dashboard)/        # Dashboard principal (rota raiz /)
+  cards/              # CRUD cartões + visão por cartão [cardId]
+  transactions/       # Listagem com filtros + review queue
   categories/         # Árvore de categorias
-  import/             # Fluxo de import CSV
-  recurring/          # Visão de recorrentes
+  comparison/         # Comparação temporal entre meses
+  import/             # Fluxo de import CSV (wizard 3 steps)
+  recurring/          # Gastos fixos e recorrentes
   budget/             # Orçamento por categoria
-  settings/           # Renda, investimentos, formatos CSV
+  settings/           # Renda, investimentos, formatos CSV, regras, dados
+  api/export/         # API Routes para export PDF (monthly + comparison)
 components/
-  ui/                 # Design system (shadcn/ui customizado)
-  layout/             # Sidebar, header
-  features/           # Componentes por feature
+  ui/                 # Design system (shadcn/ui customizado + currency-input, month-selector)
+  layout/             # app-shell, sidebar, header
+  features/           # Componentes organizados por feature
+    cards/            # card-form, card-list, card-detail, card-evolution-chart
+    categories/       # category-tree, category-form-modal, icon-picker, color-picker
+    comparison/       # evolution-chart, variation-table
+    dashboard/        # indicator-cards, category-chart, category-table, daily-chart
+    import/           # import-wizard, step-select/preview/processing, manual-mapping
+    recurring/        # recurring-content, edit-recurring-modal, recurring-detection
+    review/           # review-queue-table, category-combobox, review-filters
+    settings/         # tabs (income, investment, csv-format, rules, preferences, data)
+    transactions/     # transaction-table, transaction-filters, category-selector, manual-transaction-modal
 lib/
-  categorization/     # Pipeline, rules engine, ai-adapter
-  csv/                # Parsers, format detection
-  recurring/          # Engine de detecção de recorrências
-  analytics/          # Queries agregadas para dashboard
-prisma/               # Schema e migrations
-types/                # Tipos TypeScript compartilhados
+  categorization/     # Pipeline (exact → contains → AI → manual), normalizer, ai-adapter
+  csv/                # Parser, format detector (auto-detect delimiter/encoding/date format)
+  recurring/          # Detection engine (3+ meses, ±10% tolerância)
+  analytics/          # Dashboard queries, temporal comparison
+  validations/        # Zod schemas (card, category, income, investment, manual-transaction)
+  chart-theme.ts      # Cores dinâmicas para Recharts (light/dark)
+  format.ts           # Helpers de formatação (BRL, datas)
+  db.ts               # Prisma singleton
+  utils.ts            # cn() utility
+prisma/               # Schema (12 modelos) e migrations
+  seed.ts             # Categorias, formatos CSV, regras de categorização
 ```
 
 ## Convenções de Código
@@ -59,10 +79,12 @@ types/                # Tipos TypeScript compartilhados
 - Português para UI (labels, mensagens, categorias)
 - Inglês para código (variáveis, funções, tipos, nomes de arquivo)
 - Componentes: functional com hooks, named exports
-- Server Actions para mutações simples; API Routes para operações complexas (import, IA batch)
-- Zod schemas compartilhados entre front e back
-- Sempre user_id em todas as tabelas (multi-user ready, mesmo sem auth ativa)
-- Testes: Vitest para unit, Testing Library para componentes
+- Server Actions para mutações; API Routes para operações complexas (export PDF)
+- Zod schemas em `lib/validations/` compartilhados entre front e back
+- Sempre user_id em todas as tabelas (multi-user ready, sem auth ativa)
+- Testes: Vitest para unit tests (categorização, CSV parsing, recorrências)
+- Formulários em modals: estado local com useEffect para sync de props (padrão aceito, lint warning)
+- Dynamic icon rendering: usar `DynamicIcon` component ao invés de `getIconComponent` direto no render
 
 ## Design System
 
@@ -83,7 +105,17 @@ types/                # Tipos TypeScript compartilhados
 - IA recebe APENAS descrições de transação, nunca valores ou dados pessoais
 - MonthSnapshot é on-demand: recalcula quando dashboard é acessado
 - Detecção de recorrência: 3+ meses consecutivos, ±10% tolerância (configurável)
-- Todos os componentes DEVEM usar classes Tailwind semânticas (bg-background, text-foreground, bg-muted, border-border, text-muted-foreground) ao invés de cores diretas. Gráficos Recharts devem ler o tema ativo via useTheme() e aplicar cores dinâmicas. Export PDF é sempre estilo claro, independente do tema.
+- Todos os componentes DEVEM usar classes Tailwind semânticas. Gráficos Recharts usam `getChartColors(resolvedTheme)` de `lib/chart-theme.ts`. Export PDF é sempre estilo claro.
+
+## Gotchas
+
+- **React Compiler (Next.js 16):** Não usar `const Icon = getIconComponent(...)` direto no render — causa erro "Cannot create components during render". Usar o componente `DynamicIcon` de `icon-picker.tsx`.
+- **React Compiler refs:** Não acessar `.current` de refs durante render. Se precisa do valor no render, usar useState em vez de useRef.
+- **setState em effects:** O React Compiler lint flag `react-hooks/set-state-in-effect` é downgraded para warning no eslint config. Padrão comum e seguro para sync de form state em modals.
+- **Tailwind CSS 4:** Usa `@theme` block em `globals.css` em vez de `tailwind.config.ts`. Custom properties definidas lá.
+- **Next.js 16 params:** `params` e `searchParams` são async — sempre usar `await`.
+- **Prisma seed:** Usa IDs determinísticos (cat-*, fmt-*, rule-*) para idempotência.
+- **CurrencyInput:** Componente custom em `components/ui/currency-input.tsx` — aceita valor numérico, formata como BRL (1.234,56).
 
 ## Notas Next.js 16
 
@@ -97,3 +129,5 @@ types/                # Tipos TypeScript compartilhados
 - PRD completo: `docs/prd.md`
 - Schema Prisma: `prisma/schema.prisma`
 - Seed de categorias: `prisma/seed.ts`
+- Design tokens: `app/globals.css` (@theme block)
+- Chart theme: `lib/chart-theme.ts`

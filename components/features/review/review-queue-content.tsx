@@ -113,8 +113,6 @@ export function ReviewQueueContent() {
         transactions={transactions}
         categories={categories}
         onSortChange={handleSortChange}
-        sortBy={sortBy}
-        sortDir={sortDir}
       />
     </div>
   );

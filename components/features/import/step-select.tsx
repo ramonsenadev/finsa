@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Upload, CreditCard } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -76,7 +77,7 @@ export function StepSelect({
           Cadastre um cartão em Cartões antes de importar.
         </p>
         <Button className="mt-4" asChild>
-          <a href="/cards">Ir para Cartões</a>
+          <Link href="/cards">Ir para Cartões</Link>
         </Button>
       </div>
     );

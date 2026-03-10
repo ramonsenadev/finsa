@@ -133,8 +133,6 @@ export function DashboardContent() {
           <CardContent>
             <CategoryChart
               data={data.categoryBreakdown}
-              totalIncome={data.totalIncome}
-              hasIncome={data.hasIncome}
             />
           </CardContent>
         </Card>

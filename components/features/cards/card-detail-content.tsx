@@ -14,7 +14,6 @@ import {
   fetchCardCategories,
   fetchCardImports,
   fetchCardTransactions,
-  fetchCardAvailableMonths,
   fetchAllCategories,
 } from "@/app/cards/[cardId]/actions";
 import { CardEvolutionChart } from "./card-evolution-chart";
@@ -70,11 +69,6 @@ export function CardDetailContent({ cardId }: CardDetailContentProps) {
         page: txPage,
         ...txFilters,
       }),
-  });
-
-  const { data: availableMonths } = useQuery({
-    queryKey: ["card-months", cardId],
-    queryFn: () => fetchCardAvailableMonths(cardId),
   });
 
   const { data: allCategories } = useQuery({

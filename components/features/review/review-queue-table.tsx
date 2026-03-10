@@ -73,14 +73,10 @@ export function ReviewQueueTable({
   transactions: initialTransactions,
   categories,
   onSortChange,
-  sortBy,
-  sortDir,
 }: {
   transactions: ReviewTransaction[];
   categories: Category[];
   onSortChange: (field: "date" | "amount" | "description") => void;
-  sortBy: string;
-  sortDir: string;
 }) {
   const [transactions, setTransactions] = useState(initialTransactions);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -90,9 +86,9 @@ export function ReviewQueueTable({
   const [categorizedCount, setCategorizedCount] = useState(0);
   const [loading, setLoading] = useState<Set<string>>(new Set());
   const tableRef = useRef<HTMLDivElement>(null);
-  const lastSelectedCount = useRef(1);
+  const lastSelectedCountRef = useRef(1);
   const batchButtonRef = useRef<HTMLButtonElement>(null);
-  const rowButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const rowButtonEls = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   // Sync with new data from server
   useEffect(() => {
@@ -237,8 +233,8 @@ export function ReviewQueueTable({
   }, [activeRow]);
 
   // Freeze the displayed count so it doesn't flash "0" before hiding
-  if (selected.size > 0) lastSelectedCount.current = selected.size;
-  const displayCount = lastSelectedCount.current;
+  if (selected.size > 0) lastSelectedCountRef.current = selected.size;
+  const displayCount = selected.size > 0 ? selected.size : lastSelectedCountRef.current;
 
   if (transactions.length === 0 && categorizedCount === 0) {
     return (
@@ -434,8 +430,8 @@ export function ReviewQueueTable({
                     )}
                     <button
                       ref={(el) => {
-                        if (el) rowButtonRefs.current.set(index, el);
-                        else rowButtonRefs.current.delete(index);
+                        if (el) rowButtonEls.current.set(index, el);
+                        else rowButtonEls.current.delete(index);
                       }}
                       type="button"
                       onClick={(e) => {
@@ -459,7 +455,7 @@ export function ReviewQueueTable({
                         value={null}
                         onSelect={(catId) => handleCategorize([tx.id], catId)}
                         onClose={() => setOpenComboboxRow(null)}
-                        anchorRef={{ current: rowButtonRefs.current.get(index) ?? null }}
+                        anchorRef={{ current: rowButtonEls.current.get(index) ?? null }}
                         autoFocus
                       />
                     )}

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getIconComponent } from "./icon-picker";
+import { DynamicIcon } from "./icon-picker";
 import { CategoryFormModal } from "./category-form-modal";
 import { deleteCategory } from "@/app/categories/actions";
 
@@ -186,7 +186,6 @@ function ParentRow({
   isLast: boolean;
   children: React.ReactNode;
 }) {
-  const Icon = getIconComponent(category.icon ?? "circle-dot");
   const totalTransactions =
     category._count.transactions +
     category.children.reduce((sum, c) => sum + c._count.transactions, 0);
@@ -214,7 +213,7 @@ function ParentRow({
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
           style={{ backgroundColor: `${category.color}15` }}
         >
-          <Icon className="h-4 w-4" style={{ color: category.color ?? undefined }} />
+          <DynamicIcon name={category.icon ?? "circle-dot"} className="h-4 w-4" style={{ color: category.color ?? undefined }} />
         </span>
 
         <span className="font-medium text-foreground">{category.name}</span>
@@ -283,8 +282,6 @@ function ChildRow({
   isLast: boolean;
   parentIsLast: boolean;
 }) {
-  const Icon = getIconComponent(category.icon ?? "circle-dot");
-
   return (
     <div
       className={`group flex items-center gap-3 pl-12 pr-4 py-2.5 bg-background hover:bg-background-secondary/50 transition-colors ${
@@ -295,7 +292,8 @@ function ChildRow({
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
         style={{ backgroundColor: `${category.color}10` }}
       >
-        <Icon
+        <DynamicIcon
+          name={category.icon ?? "circle-dot"}
           className="h-3.5 w-3.5"
           style={{ color: category.color ?? undefined }}
         />

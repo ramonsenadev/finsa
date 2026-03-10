@@ -17,8 +17,6 @@ import type { CategoryBreakdown } from "@/lib/analytics/dashboard";
 
 interface CategoryChartProps {
   data: CategoryBreakdown[];
-  totalIncome: number;
-  hasIncome: boolean;
 }
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: CategoryBreakdown }> }) {
@@ -42,7 +40,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   );
 }
 
-export function CategoryChart({ data, totalIncome, hasIncome }: CategoryChartProps) {
+export function CategoryChart({ data }: CategoryChartProps) {
   const { resolvedTheme } = useTheme();
   const colors = getChartColors(resolvedTheme);
 
