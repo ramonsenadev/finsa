@@ -1,15 +1,22 @@
 import { prisma } from "@/lib/db";
 import { SettingsContent } from "@/components/features/settings/settings-content";
-import { getRecurringToleranceSetting } from "./actions";
+import {
+  getRecurringToleranceSetting,
+  getCsvFormats,
+  getCategorizationRules,
+  getCategoriesFlat,
+} from "./actions";
 
 export default async function SettingsPage() {
-  const incomes = await prisma.income.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-
-  const investments = await prisma.investment.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const [incomes, investments, recurringTolerance, csvFormats, categorizationRules, categories] =
+    await Promise.all([
+      prisma.income.findMany({ orderBy: { createdAt: "desc" } }),
+      prisma.investment.findMany({ orderBy: { createdAt: "desc" } }),
+      getRecurringToleranceSetting(),
+      getCsvFormats(),
+      getCategorizationRules(),
+      getCategoriesFlat(),
+    ]);
 
   const incomeRows = incomes.map((i) => ({
     id: i.id,
@@ -33,8 +40,6 @@ export default async function SettingsPage() {
     .filter((i) => i.isActive)
     .reduce((sum, i) => sum + i.amount, 0);
 
-  const recurringTolerance = await getRecurringToleranceSetting();
-
   return (
     <div className="space-y-6">
       <div>
@@ -49,6 +54,9 @@ export default async function SettingsPage() {
         investments={investmentRows}
         totalIncome={totalIncome}
         recurringTolerance={recurringTolerance}
+        csvFormats={csvFormats}
+        categorizationRules={categorizationRules}
+        categories={categories}
       />
     </div>
   );
