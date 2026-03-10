@@ -3,9 +3,10 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* Project design tokens */
+  /* Project design tokens — Light defaults (overridden by .dark below) */
   --color-background: #ffffff;
   --color-background-secondary: #f9fafb;
+  --color-background-elevated: #f3f4f6;
   --color-foreground: #111827;
   --color-foreground-secondary: #6b7280;
   --color-border: #e5e7eb;
@@ -41,4 +42,38 @@ body {
   font-size: 14px;
   color: var(--color-foreground);
   background-color: var(--color-background);
+}
+
+html {
+  transition: color 200ms ease, background-color 200ms ease;
+}
+
+/* ── Dark mode overrides ──────────────────────────────────── */
+.dark {
+  --color-background: #0F1117;
+  --color-background-secondary: #1A1D27;
+  --color-background-elevated: #232734;
+  --color-foreground: #F1F2F4;
+  --color-foreground-secondary: #9CA3AF;
+  --color-border: #2D3140;
+  --color-accent: #818CF8;
+  --color-accent-foreground: #ffffff;
+  --color-success: #34D399;
+  --color-warning: #FBBF24;
+  --color-error: #F87171;
+  --color-recurring: #A78BFA;
+
+  --color-primary: #818CF8;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #232734;
+  --color-secondary-foreground: #F1F2F4;
+  --color-muted: #232734;
+  --color-muted-foreground: #9CA3AF;
+  --color-destructive: #F87171;
+  --color-popover: #1A1D27;
+  --color-popover-foreground: #F1F2F4;
+  --color-card: #1A1D27;
+  --color-card-foreground: #F1F2F4;
+  --color-input: #2D3140;
+  --color-ring: #818CF8;
 }

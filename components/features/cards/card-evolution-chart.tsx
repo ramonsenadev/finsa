@@ -8,8 +8,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL } from "@/lib/format";
+import { getChartColors } from "@/lib/chart-theme";
 import type { CardMonthlyEvolution } from "@/lib/analytics/card-detail";
 
 interface CardEvolutionChartProps {
@@ -41,6 +43,8 @@ function CustomTooltip({
 }
 
 export function CardEvolutionChart({ data }: CardEvolutionChartProps) {
+  const { resolvedTheme } = useTheme();
+  const colors = getChartColors(resolvedTheme);
   if (data.length === 0) {
     return (
       <Card>
@@ -69,13 +73,13 @@ export function CardEvolutionChart({ data }: CardEvolutionChartProps) {
           >
             <defs>
               <linearGradient id="cardEvolutionFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6366F1" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#6366F1" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={colors.accentPrimary} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={colors.accentPrimary} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tick={{ fontSize: 11, fill: colors.tickFill }}
               axisLine={false}
               tickLine={false}
             />
@@ -83,7 +87,7 @@ export function CardEvolutionChart({ data }: CardEvolutionChartProps) {
               tickFormatter={(v: number) =>
                 v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(Math.round(v))
               }
-              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tick={{ fontSize: 11, fill: colors.tickFill }}
               axisLine={false}
               tickLine={false}
               width={48}
@@ -92,11 +96,11 @@ export function CardEvolutionChart({ data }: CardEvolutionChartProps) {
             <Area
               type="monotone"
               dataKey="total"
-              stroke="#6366F1"
+              stroke={colors.accentPrimary}
               strokeWidth={2}
               fill="url(#cardEvolutionFill)"
-              dot={{ r: 3, fill: "#6366F1", stroke: "#fff", strokeWidth: 2 }}
-              activeDot={{ r: 5, fill: "#6366F1", stroke: "#fff", strokeWidth: 2 }}
+              dot={{ r: 3, fill: colors.accentPrimary, stroke: colors.dotStroke, strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: colors.accentPrimary, stroke: colors.dotStroke, strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

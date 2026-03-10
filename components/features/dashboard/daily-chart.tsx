@@ -9,7 +9,9 @@ import {
   ResponsiveContainer,
   ReferenceArea,
 } from "recharts";
+import { useTheme } from "next-themes";
 import { formatBRL } from "@/lib/format";
+import { getChartColors } from "@/lib/chart-theme";
 import type { DailyExpenseSummary } from "@/lib/analytics/daily-expenses";
 
 interface DailyChartProps {
@@ -91,6 +93,9 @@ function getWeekendRanges(days: ChartDay[]) {
 }
 
 export function DailyChart({ data }: DailyChartProps) {
+  const { resolvedTheme } = useTheme();
+  const colors = getChartColors(resolvedTheme);
+
   if (data.days.every((d) => d.total === 0)) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-foreground-secondary">
@@ -119,14 +124,14 @@ export function DailyChart({ data }: DailyChartProps) {
               x2={r.x2}
               y1={0}
               y2={maxTotal * 1.1}
-              fill="#F3F4F6"
+              fill={colors.weekendFill}
               fillOpacity={1}
               ifOverflow="extendDomain"
             />
           ))}
           <XAxis
             dataKey="day"
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 11, fill: colors.tickFill }}
             axisLine={false}
             tickLine={false}
             interval={1}
@@ -135,7 +140,7 @@ export function DailyChart({ data }: DailyChartProps) {
             tickFormatter={(v: number) =>
               v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
             }
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 11, fill: colors.tickFill }}
             axisLine={false}
             tickLine={false}
             width={48}
@@ -143,18 +148,18 @@ export function DailyChart({ data }: DailyChartProps) {
           <Tooltip content={<CustomTooltip />} />
           <defs>
             <linearGradient id="dailyFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366F1" stopOpacity={0.1} />
-              <stop offset="100%" stopColor="#6366F1" stopOpacity={0.02} />
+              <stop offset="0%" stopColor={colors.accentPrimary} stopOpacity={0.1} />
+              <stop offset="100%" stopColor={colors.accentPrimary} stopOpacity={0.02} />
             </linearGradient>
           </defs>
           <Area
             type="monotone"
             dataKey="total"
-            stroke="#6366F1"
+            stroke={colors.accentPrimary}
             strokeWidth={2}
             fill="url(#dailyFill)"
             dot={false}
-            activeDot={{ r: 4, fill: "#6366F1", stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: colors.accentPrimary, stroke: colors.dotStroke, strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

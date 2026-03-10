@@ -12,8 +12,10 @@ import {
   Bar,
   Cell,
 } from "recharts";
+import { useTheme } from "next-themes";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { formatBRL } from "@/lib/format";
+import { getChartColors } from "@/lib/chart-theme";
 import type { InvestmentEvolutionData } from "@/lib/analytics/investment-evolution";
 
 interface InvestmentPanelProps {
@@ -53,6 +55,8 @@ function EvolutionTooltip({
 }
 
 export function InvestmentPanel({ data }: InvestmentPanelProps) {
+  const { resolvedTheme } = useTheme();
+  const colors = getChartColors(resolvedTheme);
   const hasEvolution = data.months.filter((m) => m.amount > 0).length >= 2;
   const maxAmount = Math.max(...data.months.map((m) => m.amount), 0);
   const maxPercent = Math.max(
@@ -131,7 +135,7 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
             >
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: "#6b7280" }}
+                tick={{ fontSize: 11, fill: colors.tickFill }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -140,7 +144,7 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                 tickFormatter={(v: number) =>
                   v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
                 }
-                tick={{ fontSize: 11, fill: "#6b7280" }}
+                tick={{ fontSize: 11, fill: colors.tickFill }}
                 axisLine={false}
                 tickLine={false}
                 width={48}
@@ -150,7 +154,7 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                 yAxisId="percent"
                 orientation="right"
                 tickFormatter={(v: number) => `${v.toFixed(0)}%`}
-                tick={{ fontSize: 11, fill: "#6b7280" }}
+                tick={{ fontSize: 11, fill: colors.tickFill }}
                 axisLine={false}
                 tickLine={false}
                 width={40}
@@ -161,14 +165,14 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                 <ReferenceLine
                   yAxisId="percent"
                   y={data.targetPercent}
-                  stroke="#F59E0B"
+                  stroke={colors.warningStroke}
                   strokeDasharray="6 3"
                   strokeWidth={1.5}
                   label={{
                     value: `Meta ${data.targetPercent}%`,
                     position: "right",
                     fontSize: 10,
-                    fill: "#F59E0B",
+                    fill: colors.warningStroke,
                   }}
                 />
               )}
@@ -176,21 +180,21 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                 yAxisId="amount"
                 type="monotone"
                 dataKey="amount"
-                stroke="#6366F1"
+                stroke={colors.accentPrimary}
                 strokeWidth={2}
-                dot={{ r: 3, fill: "#6366F1", stroke: "#fff", strokeWidth: 2 }}
-                activeDot={{ r: 4, fill: "#6366F1", stroke: "#fff", strokeWidth: 2 }}
+                dot={{ r: 3, fill: colors.accentPrimary, stroke: colors.dotStroke, strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: colors.accentPrimary, stroke: colors.dotStroke, strokeWidth: 2 }}
                 name="Valor (R$)"
               />
               <Line
                 yAxisId="percent"
                 type="monotone"
                 dataKey="percentOfIncome"
-                stroke="#8B5CF6"
+                stroke={colors.accentSecondary}
                 strokeWidth={2}
                 strokeDasharray="4 2"
-                dot={{ r: 3, fill: "#8B5CF6", stroke: "#fff", strokeWidth: 2 }}
-                activeDot={{ r: 4, fill: "#8B5CF6", stroke: "#fff", strokeWidth: 2 }}
+                dot={{ r: 3, fill: colors.accentSecondary, stroke: colors.dotStroke, strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: colors.accentSecondary, stroke: colors.dotStroke, strokeWidth: 2 }}
                 name="% da renda"
                 connectNulls
               />
@@ -207,9 +211,9 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
               <span
                 className="inline-block h-0.5 w-4 rounded"
                 style={{
-                  background: "#8B5CF6",
+                  background: colors.accentSecondary,
                   backgroundImage:
-                    "repeating-linear-gradient(90deg, #8B5CF6 0 4px, transparent 4px 6px)",
+                    `repeating-linear-gradient(90deg, ${colors.accentSecondary} 0 4px, transparent 4px 6px)`,
                 }}
               />
               % da renda
@@ -219,9 +223,9 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                 <span
                   className="inline-block h-0.5 w-4 rounded"
                   style={{
-                    background: "#F59E0B",
+                    background: colors.warningStroke,
                     backgroundImage:
-                      "repeating-linear-gradient(90deg, #F59E0B 0 6px, transparent 6px 9px)",
+                      `repeating-linear-gradient(90deg, ${colors.warningStroke} 0 6px, transparent 6px 9px)`,
                   }}
                 />
                 Meta
@@ -253,7 +257,7 @@ export function InvestmentPanel({ data }: InvestmentPanelProps) {
                 <YAxis
                   type="category"
                   dataKey="label"
-                  tick={{ fontSize: 12, fill: "#374151" }}
+                  tick={{ fontSize: 12, fill: colors.tickFillStrong }}
                   axisLine={false}
                   tickLine={false}
                   width={100}

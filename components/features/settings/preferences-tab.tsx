@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Monitor } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -11,16 +13,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { updateRecurringTolerance } from "@/app/settings/actions";
 
 interface PreferencesTabProps {
   initialTolerance: number;
 }
 
+const themeOptions = [
+  { value: "light", label: "Claro", icon: Sun },
+  { value: "dark", label: "Escuro", icon: Moon },
+  { value: "system", label: "Auto", icon: Monitor },
+] as const;
+
 export function PreferencesTab({ initialTolerance }: PreferencesTabProps) {
   const [tolerance, setTolerance] = useState(String(initialTolerance));
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   function handleSave() {
     const val = parseInt(tolerance, 10);
@@ -37,8 +47,37 @@ export function PreferencesTab({ initialTolerance }: PreferencesTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Theme selector */}
+      <div className="rounded-lg border border-border bg-card p-5">
+        <h3 className="mb-4 text-base font-semibold">Tema</h3>
+        <div className="max-w-sm space-y-2">
+          <Label>Aparência</Label>
+          <div className="flex rounded-lg border border-border bg-muted p-1">
+            {themeOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setTheme(opt.value)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  theme === opt.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <opt.icon className="h-4 w-4" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-foreground-secondary">
+            Auto segue a preferência do seu sistema operacional.
+          </p>
+        </div>
+      </div>
+
       {/* Recurrence tolerance */}
-      <div className="rounded-lg border border-border bg-white p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <h3 className="mb-4 text-base font-semibold">Detecção de Recorrências</h3>
         <div className="max-w-sm space-y-2">
           <Label htmlFor="tolerance">
@@ -76,7 +115,7 @@ export function PreferencesTab({ initialTolerance }: PreferencesTabProps) {
       </div>
 
       {/* Currency */}
-      <div className="rounded-lg border border-border bg-white p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <h3 className="mb-4 text-base font-semibold">Moeda</h3>
         <div className="max-w-sm space-y-2">
           <Label>Moeda padrão</Label>
@@ -93,20 +132,6 @@ export function PreferencesTab({ initialTolerance }: PreferencesTabProps) {
           <p className="text-sm text-foreground-secondary">
             Suporte a outras moedas será adicionado em breve.
           </p>
-        </div>
-      </div>
-
-      {/* Theme */}
-      <div className="rounded-lg border border-border bg-white p-5">
-        <h3 className="mb-4 text-base font-semibold">Tema</h3>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background-secondary">
-            <span className="text-lg">🌙</span>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Dark mode</p>
-            <p className="text-sm text-foreground-secondary">Em breve</p>
-          </div>
         </div>
       </div>
     </div>

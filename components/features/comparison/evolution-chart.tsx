@@ -11,7 +11,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { useTheme } from "next-themes";
 import { formatBRL } from "@/lib/format";
+import { getChartColors } from "@/lib/chart-theme";
 import type { TemporalComparisonData } from "@/lib/analytics/temporal-comparison";
 
 const MONTH_NAMES = [
@@ -87,6 +89,8 @@ function CustomTooltip({
 }
 
 export function EvolutionChart({ data }: EvolutionChartProps) {
+  const { resolvedTheme } = useTheme();
+  const colors = getChartColors(resolvedTheme);
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
     new Set(),
   );
@@ -139,7 +143,7 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
         >
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 11, fill: colors.tickFill }}
             axisLine={false}
             tickLine={false}
           />
@@ -147,7 +151,7 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
             tickFormatter={(v: number) =>
               v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(Math.round(v))
             }
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 11, fill: colors.tickFill }}
             axisLine={false}
             tickLine={false}
             width={52}
@@ -159,6 +163,7 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
                 series={data.series}
                 hiddenCategories={hiddenCategories}
                 onToggle={toggleCategory}
+                hiddenColor={colors.hiddenColor}
               />
             }
           />
@@ -166,7 +171,7 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
           {overallAvg > 0 && (
             <ReferenceLine
               y={overallAvg}
-              stroke="#9CA3AF"
+              stroke={colors.referenceStroke}
               strokeDasharray="6 4"
               strokeWidth={1}
             />
@@ -203,10 +208,12 @@ function CustomLegend({
   series,
   hiddenCategories,
   onToggle,
+  hiddenColor,
 }: {
   series: TemporalComparisonData["series"];
   hiddenCategories: Set<string>;
   onToggle: (id: string) => void;
+  hiddenColor: string;
 }) {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-2 justify-center">
@@ -226,7 +233,7 @@ function CustomLegend({
             <span
               className="inline-block h-2.5 w-2.5 rounded-sm"
               style={{
-                backgroundColor: hidden ? "#D1D5DB" : color,
+                backgroundColor: hidden ? hiddenColor : color,
               }}
             />
             <span
