@@ -13,7 +13,7 @@ const isMac = typeof navigator !== "undefined" && /Mac/.test(navigator.userAgent
 const mod = isMac ? "⌘" : "Ctrl";
 
 const shortcuts = [
-  { keys: `${mod}+I`, description: "Importar CSV" },
+  { keys: `${mod}+I`, description: "Importar Fatura" },
   { keys: `${mod}+N`, description: "Novo lançamento" },
   { keys: "← →", description: "Navegar meses" },
   { keys: "/", description: "Busca global" },

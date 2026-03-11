@@ -6,7 +6,7 @@ import { StepSelect } from "./step-select";
 import { StepPreview } from "./step-preview";
 import { StepProcessing } from "./step-processing";
 import { ManualMappingModal } from "./manual-mapping-modal";
-import { parseCsvFile, processImport, saveCustomFormat } from "@/app/import/actions";
+import { parseCsvFile, processImport, saveCustomFormat } from "@/app/invoices/import/actions";
 
 type Card = {
   id: string;
@@ -134,11 +134,11 @@ export function ImportWizard({ cards }: { cards: Card[] }) {
       if ("success" in result) {
         setImportResult(result as ImportResult);
         setStep(3);
-        toast.success(`Import concluído: ${(result as ImportResult).imported} transações`);
+        toast.success(`Importação concluída: ${(result as ImportResult).imported} transações`);
       }
     } catch {
-      setError("Erro ao processar o import");
-      toast.error("Erro ao processar o import");
+      setError("Erro ao processar a importação");
+      toast.error("Erro ao processar a importação");
     }
 
     setIsLoading(false);

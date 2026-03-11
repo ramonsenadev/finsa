@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, Upload } from "lucide-react";
+import { RefreshCw, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
@@ -79,10 +79,10 @@ export function DashboardContent() {
         </p>
       ) : isEmpty ? (
         <EmptyState
-          icon={Upload}
-          title="Importe seu primeiro CSV para começar"
+          icon={FileText}
+          title="Importe sua primeira fatura para começar"
           description="Importe a fatura do seu cartão de crédito ou adicione lançamentos manuais para visualizar seus gastos."
-          action={{ label: "Importar CSV", href: "/import" }}
+          action={{ label: "Importar Fatura", href: "/invoices/import" }}
         />
       ) : (
         <>

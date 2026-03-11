@@ -247,7 +247,7 @@ export function StepPreview({
               Importando...
             </>
           ) : (
-            `Confirmar Import (${importableCount} transações)`
+            `Confirmar Importação (${importableCount} transações)`
           )}
         </Button>
       </div>

@@ -11,7 +11,7 @@ export interface Shortcut {
 }
 
 export const SHORTCUT_DEFINITIONS = [
-  { key: "i", ctrl: true, description: "Importar CSV" },
+  { key: "i", ctrl: true, description: "Importar Fatura" },
   { key: "n", ctrl: true, description: "Novo lançamento" },
   { key: "ArrowLeft", ctrl: false, description: "Mês anterior" },
   { key: "ArrowRight", ctrl: false, description: "Próximo mês" },
@@ -44,7 +44,7 @@ export function useKeyboardShortcuts({
 
       if (mod && e.key === "i") {
         e.preventDefault();
-        router.push("/import");
+        router.push("/invoices/import");
         return;
       }
 

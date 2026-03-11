@@ -70,10 +70,10 @@ export function ImportList({ imports: initialImports, showCard = true, onDeleted
 
     if (result.success) {
       setImports((prev) => prev.filter((i) => i.id !== deleteTarget.id));
-      toast.success(`Import "${deleteTarget.fileName}" excluído com ${deleteTarget.txCount} transações`);
+      toast.success(`Fatura "${deleteTarget.fileName}" excluída com ${deleteTarget.txCount} transações`);
       onDeleted?.();
     } else {
-      toast.error(result.error ?? "Erro ao excluir import");
+      toast.error(result.error ?? "Erro ao excluir fatura");
     }
 
     setDeleting(false);

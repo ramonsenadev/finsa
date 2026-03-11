@@ -201,7 +201,7 @@ export function TransactionsTable({
           </p>
           <div className="mt-4 flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
-              <a href="/import">Importar CSV</a>
+              <a href="/invoices/import">Importar Fatura</a>
             </Button>
           </div>
         </div>

@@ -10,7 +10,7 @@ import {
   CreditCard,
   Repeat,
   FolderTree,
-  Upload,
+  FileText,
   PiggyBank,
   Settings,
   ChevronLeft,
@@ -32,7 +32,7 @@ const navItems = [
   { href: "/cards", label: "Cartões", icon: CreditCard },
   { href: "/recurring", label: "Recorrentes", icon: Repeat },
   { href: "/categories", label: "Categorias", icon: FolderTree },
-  { href: "/import", label: "Import", icon: Upload },
+  { href: "/invoices", label: "Faturas", icon: FileText },
   { href: "/budget", label: "Orçamento", icon: PiggyBank },
   { href: "/settings", label: "Configurações", icon: Settings },
 ] as const;

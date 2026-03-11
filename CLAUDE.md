@@ -42,7 +42,9 @@ app/                  # Rotas Next.js App Router
   transactions/       # Listagem com filtros + review queue
   categories/         # Árvore de categorias
   comparison/         # Comparação temporal entre meses
-  import/             # Fluxo de import CSV (wizard 3 steps)
+  import/             # Redirect → /invoices (compatibilidade)
+  invoices/           # Hub de faturas (listagem + summary + gráfico)
+    import/           # Wizard de importação CSV (3 steps)
   recurring/          # Gastos fixos e recorrentes
   budget/             # Orçamento por categoria
   settings/           # Renda, investimentos, formatos CSV, regras, dados
@@ -56,6 +58,7 @@ components/
     comparison/       # evolution-chart, variation-table
     dashboard/        # indicator-cards, category-chart, category-table, daily-chart
     import/           # import-wizard, step-select/preview/processing, manual-mapping
+    invoices/         # invoices-content, invoices-table, summary-cards, evolution-chart, status-badge, actions-menu
     recurring/        # recurring-content, edit-recurring-modal, recurring-detection
     review/           # review-queue-table, category-combobox, review-filters
     settings/         # tabs (income, investment, csv-format, rules, preferences, data)

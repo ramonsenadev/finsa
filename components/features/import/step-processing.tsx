@@ -22,7 +22,7 @@ export function StepProcessing({
   return (
     <div className="mx-auto max-w-lg rounded-lg border border-border bg-background p-8 text-center">
       <CheckCircle2 className="mx-auto mb-4 size-12 text-success" />
-      <h2 className="text-lg font-semibold">Import concluído</h2>
+      <h2 className="text-lg font-semibold">Importação concluída</h2>
       <p className="mt-1 text-sm text-foreground-secondary">
         As transações foram importadas com sucesso.
       </p>
@@ -52,7 +52,7 @@ export function StepProcessing({
         )}
       </div>
 
-      <div className="mt-8 flex gap-3 justify-center">
+      <div className="mt-8 flex flex-wrap gap-3 justify-center">
         {result.manualPending > 0 && (
           <Button asChild>
             <a href={`/transactions?import=${result.importId}&uncategorized=true`}>
@@ -60,8 +60,11 @@ export function StepProcessing({
             </a>
           </Button>
         )}
+        <Button variant="outline" asChild>
+          <a href="/invoices">Ver Faturas</a>
+        </Button>
         <Button variant="outline" onClick={onReset}>
-          Novo Import
+          Nova Importação
         </Button>
       </div>
     </div>

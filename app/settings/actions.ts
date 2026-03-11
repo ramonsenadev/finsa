@@ -456,6 +456,7 @@ export async function deleteImport(importId: string) {
   revalidatePath("/settings");
   revalidatePath("/transactions");
   revalidatePath("/cards");
+  revalidatePath("/invoices");
   return { success: true };
 }
 
