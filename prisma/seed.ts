@@ -344,6 +344,41 @@ async function main() {
       type: "contains",
       categoryKey: "Outros>Estorno",
     },
+    // Keyword-based rules — common words in transaction descriptions
+    // Alimentação
+    { pattern: "restaurante", type: "contains", categoryKey: "Alimentacao>Restaurante" },
+    { pattern: "lanchonete", type: "contains", categoryKey: "Alimentacao>Restaurante" },
+    { pattern: "churrascaria", type: "contains", categoryKey: "Alimentacao>Restaurante" },
+    { pattern: "pizzaria", type: "contains", categoryKey: "Alimentacao>Restaurante" },
+    { pattern: "supermercado", type: "contains", categoryKey: "Alimentacao>Supermercado" },
+    { pattern: "mercado", type: "contains", categoryKey: "Alimentacao>Supermercado" },
+    { pattern: "hortifruti", type: "contains", categoryKey: "Alimentacao>Supermercado" },
+    { pattern: "padaria", type: "contains", categoryKey: "Alimentacao>Padaria" },
+    { pattern: "confeitaria", type: "contains", categoryKey: "Alimentacao>Padaria" },
+    { pattern: "cafeteria", type: "contains", categoryKey: "Alimentacao>Cafe" },
+    { pattern: "doceria", type: "contains", categoryKey: "Alimentacao>Doces/Chocolates" },
+    { pattern: "chocolat", type: "contains", categoryKey: "Alimentacao>Doces/Chocolates" },
+    // Saúde
+    { pattern: "farmacia", type: "contains", categoryKey: "Saude>Farmacia" },
+    { pattern: "drogaria", type: "contains", categoryKey: "Saude>Farmacia" },
+    { pattern: "droga raia", type: "contains", categoryKey: "Saude>Farmacia" },
+    { pattern: "drogasil", type: "contains", categoryKey: "Saude>Farmacia" },
+    { pattern: "manipulacao", type: "contains", categoryKey: "Saude>Manipulacao" },
+    // Transporte
+    { pattern: "posto", type: "contains", categoryKey: "Transporte>Combustivel" },
+    { pattern: "combustivel", type: "contains", categoryKey: "Transporte>Combustivel" },
+    { pattern: "estacionamento", type: "contains", categoryKey: "Transporte>Estacionamento" },
+    { pattern: "parking", type: "contains", categoryKey: "Transporte>Estacionamento" },
+    // Serviços
+    { pattern: "pet shop", type: "contains", categoryKey: "Servicos>Pet" },
+    { pattern: "petshop", type: "contains", categoryKey: "Servicos>Pet" },
+    { pattern: "veterinar", type: "contains", categoryKey: "Servicos>Pet" },
+    { pattern: "lavanderia", type: "contains", categoryKey: "Servicos>Lavanderia" },
+    // Compras
+    { pattern: "aliexpress", type: "contains", categoryKey: "Compras>E-commerce" },
+    { pattern: "magalu", type: "contains", categoryKey: "Compras>E-commerce" },
+    { pattern: "magazine luiza", type: "contains", categoryKey: "Compras>E-commerce" },
+    { pattern: "casas bahia", type: "contains", categoryKey: "Compras>E-commerce" },
   ];
 
   for (const rule of rules) {

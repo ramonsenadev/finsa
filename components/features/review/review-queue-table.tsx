@@ -20,6 +20,7 @@ import {
   countSameMerchantTransactions,
   recategorizeTransaction,
 } from "@/app/transactions/actions";
+import { recategorizeUncategorized } from "@/app/settings/actions";
 import { ArrowUpDown, Check, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 
@@ -217,6 +218,24 @@ export function ReviewQueueTable({
   const lastSelectedCountRef = useRef(1);
   const batchButtonRef = useRef<HTMLButtonElement>(null);
   const rowButtonEls = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  const [recategorizing, setRecategorizing] = useState(false);
+
+  async function handleRecategorize() {
+    setRecategorizing(true);
+    const result = await recategorizeUncategorized();
+    setRecategorizing(false);
+    if (result.success && result.categorized > 0) {
+      // Remove newly categorized transactions from local state
+      // The server action already updated the DB, so we refresh via re-fetching
+      toast.success(`${result.categorized} transações categorizadas automaticamente`);
+      // Remove from local list — we don't know which ones matched,
+      // so trigger a page reload to get fresh data
+      window.location.reload();
+    } else if (result.success) {
+      toast.info("Nenhuma transação foi categorizada pelas regras atuais");
+    }
+  }
 
   // Merchant propagation state
   const [confirmState, setConfirmState] = useState<{
@@ -484,9 +503,21 @@ export function ReviewQueueTable({
     <div ref={tableRef}>
       {/* Header counters */}
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm text-foreground-secondary">
-          <span className="font-semibold text-foreground">{remainingCount}</span>{" "}
-          {remainingCount === 1 ? "transação na fila" : "transações na fila"}
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-foreground-secondary">
+            <span className="font-semibold text-foreground">{remainingCount}</span>{" "}
+            {remainingCount === 1 ? "transação na fila" : "transações na fila"}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleRecategorize}
+            disabled={recategorizing}
+            className="h-7 gap-1.5 text-xs text-foreground-secondary"
+          >
+            <RefreshCw className={`h-3 w-3 ${recategorizing ? "animate-spin" : ""}`} />
+            Re-categorizar
+          </Button>
         </div>
 
         {/* Batch action — always rendered to prevent layout shift */}

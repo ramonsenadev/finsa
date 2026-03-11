@@ -482,3 +482,70 @@ export async function updateRecurringTolerance(tolerance: number) {
   revalidatePath("/recurring");
   return { success: true };
 }
+
+// ── Re-categorize uncategorized transactions ──
+
+export async function recategorizeUncategorized() {
+  const userId = await getUserId();
+  const { categorizeByRules } = await import("@/lib/categorization/rules-engine");
+
+  // Find all uncategorized transactions
+  const uncategorized = await prisma.transaction.findMany({
+    where: { userId, categoryId: null },
+    select: { id: true, description: true },
+  });
+
+  if (uncategorized.length === 0) {
+    return { success: true, categorized: 0, total: 0 };
+  }
+
+  const descriptions = uncategorized.map((t) => t.description);
+  const results = await categorizeByRules(userId, descriptions);
+
+  // Build updates
+  const updates: { id: string; categoryId: string; ruleId?: string }[] = [];
+  for (const tx of uncategorized) {
+    const match = results.get(tx.description);
+    if (match) {
+      updates.push({ id: tx.id, categoryId: match.categoryId, ruleId: match.ruleId });
+    }
+  }
+
+  if (updates.length > 0) {
+    // Update transactions in batches
+    await prisma.$transaction(
+      updates.map((u) =>
+        prisma.transaction.update({
+          where: { id: u.id },
+          data: {
+            categoryId: u.categoryId,
+            categorizationMethod: "rule",
+          },
+        })
+      )
+    );
+
+    // Update rule usage counts
+    const ruleUsage = new Map<string, number>();
+    for (const u of updates) {
+      if (u.ruleId) {
+        ruleUsage.set(u.ruleId, (ruleUsage.get(u.ruleId) ?? 0) + 1);
+      }
+    }
+    for (const [ruleId, count] of ruleUsage) {
+      await prisma.categorizationRule.update({
+        where: { id: ruleId },
+        data: {
+          usageCount: { increment: count },
+          lastUsedAt: new Date(),
+        },
+      });
+    }
+
+    await invalidateAllSnapshots(userId);
+    revalidatePath("/transactions");
+    revalidatePath("/transactions/review");
+  }
+
+  return { success: true, categorized: updates.length, total: uncategorized.length };
+}

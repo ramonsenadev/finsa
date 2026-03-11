@@ -103,7 +103,7 @@ export function StepSelect({
                       •••• {card.lastFourDigits}
                     </span>
                   )}
-                  <span className="text-xs text-foreground-secondary capitalize">
+                  <span className="text-xs text-foreground/50 capitalize">
                     {card.issuer}
                   </span>
                 </span>

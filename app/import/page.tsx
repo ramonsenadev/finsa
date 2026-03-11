@@ -1,13 +1,8 @@
 import { ImportWizard } from "@/components/features/import/import-wizard";
-import { ImportList } from "@/components/features/settings/import-list";
 import { getActiveCards } from "./actions";
-import { getImportsList } from "@/app/settings/actions";
 
 export default async function ImportPage() {
-  const [cards, imports] = await Promise.all([
-    getActiveCards(),
-    getImportsList(),
-  ]);
+  const cards = await getActiveCards();
 
   return (
     <div>
@@ -18,15 +13,6 @@ export default async function ImportPage() {
       <div className="mt-6">
         <ImportWizard cards={cards} />
       </div>
-
-      {imports.length > 0 && (
-        <div className="mt-8">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Importações anteriores
-          </h2>
-          <ImportList imports={imports} />
-        </div>
-      )}
     </div>
   );
 }

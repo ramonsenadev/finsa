@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, Trash2, AlertTriangle, FileText } from "lucide-react";
-import { exportAllData, wipeAllData } from "@/app/settings/actions";
+import { Download, Trash2, AlertTriangle, FileText, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { exportAllData, wipeAllData, recategorizeUncategorized } from "@/app/settings/actions";
 import { ImportList, type ImportRecord } from "./import-list";
 
 interface DataTabProps {
@@ -18,6 +19,7 @@ export function DataTab({ imports }: DataTabProps) {
   const [confirmText, setConfirmText] = useState("");
   const [wiping, setWiping] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [recategorizing, setRecategorizing] = useState(false);
 
   function handleExport() {
     startTransition(async () => {
@@ -35,6 +37,19 @@ export function DataTab({ imports }: DataTabProps) {
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
     });
+  }
+
+  async function handleRecategorize() {
+    setRecategorizing(true);
+    const result = await recategorizeUncategorized();
+    setRecategorizing(false);
+    if (result.success) {
+      if (result.categorized === 0) {
+        toast.info(`Nenhuma das ${result.total} transações pendentes foi categorizada pelas regras atuais`);
+      } else {
+        toast.success(`${result.categorized} de ${result.total} transações categorizadas automaticamente`);
+      }
+    }
   }
 
   async function handleWipe() {
@@ -62,6 +77,19 @@ export function DataTab({ imports }: DataTabProps) {
             : isPending
               ? "Exportando..."
               : "Exportar todos os dados"}
+        </Button>
+      </div>
+
+      {/* Re-categorize */}
+      <div className="rounded-lg border border-border bg-card p-5">
+        <h3 className="mb-2 text-base font-semibold">Re-categorizar Pendentes</h3>
+        <p className="mb-4 text-sm text-foreground-secondary">
+          Aplica as regras de categorização atuais em todas as transações que ainda
+          não foram categorizadas. Útil após adicionar novas regras.
+        </p>
+        <Button onClick={handleRecategorize} disabled={recategorizing} variant="outline">
+          <RefreshCw className={`mr-1.5 h-4 w-4 ${recategorizing ? "animate-spin" : ""}`} />
+          {recategorizing ? "Processando..." : "Re-categorizar transações"}
         </Button>
       </div>
 
