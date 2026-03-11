@@ -8,7 +8,7 @@ export default async function CardsPage() {
 
   const cards = user
     ? await prisma.card.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, deletedAt: null },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -16,6 +16,8 @@ export default async function CardsPage() {
           issuer: true,
           lastFourDigits: true,
           holderName: true,
+          closingDay: true,
+          dueDay: true,
           isActive: true,
           csvFormatId: true,
         },

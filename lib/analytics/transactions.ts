@@ -49,6 +49,7 @@ export interface TransactionsResult {
   transactions: TransactionRow[];
   total: number;
   totalAmount: number;
+  uncategorizedCount: number;
   page: number;
   pageSize: number;
 }
@@ -97,9 +98,9 @@ export async function getTransactions(
     const realCardIds = cardIds.filter((id) => id !== "manual");
 
     if (hasManual && realCardIds.length > 0) {
-      where.OR = [
-        { cardId: { in: realCardIds } },
-        { sourceType: "manual" },
+      where.AND = [
+        ...(where.AND ?? []),
+        { OR: [{ cardId: { in: realCardIds } }, { sourceType: "manual" }] },
       ];
     } else if (hasManual) {
       where.sourceType = "manual";
@@ -108,19 +109,41 @@ export async function getTransactions(
     }
   }
 
-  // Category filter (parent selects all children)
+  // Category filter (parent selects all children, "uncategorized" = null)
   if (categoryIds && categoryIds.length > 0) {
-    const childCategories = await prisma.category.findMany({
-      where: {
-        OR: [
-          { id: { in: categoryIds } },
-          { parentId: { in: categoryIds } },
-        ],
-      },
-      select: { id: true },
-    });
-    const allCatIds = childCategories.map((c) => c.id);
-    where.categoryId = { in: allCatIds };
+    const hasUncategorized = categoryIds.includes("uncategorized");
+    const realCategoryIds = categoryIds.filter((id) => id !== "uncategorized");
+
+    if (hasUncategorized && realCategoryIds.length > 0) {
+      const childCategories = await prisma.category.findMany({
+        where: {
+          OR: [
+            { id: { in: realCategoryIds } },
+            { parentId: { in: realCategoryIds } },
+          ],
+        },
+        select: { id: true },
+      });
+      const allCatIds = childCategories.map((c) => c.id);
+      where.AND = [
+        ...(where.AND ?? []),
+        { OR: [{ categoryId: { in: allCatIds } }, { categoryId: null }] },
+      ];
+    } else if (hasUncategorized) {
+      where.categoryId = null;
+    } else {
+      const childCategories = await prisma.category.findMany({
+        where: {
+          OR: [
+            { id: { in: realCategoryIds } },
+            { parentId: { in: realCategoryIds } },
+          ],
+        },
+        select: { id: true },
+      });
+      const allCatIds = childCategories.map((c) => c.id);
+      where.categoryId = { in: allCatIds };
+    }
   }
 
   // Amount range
@@ -149,8 +172,8 @@ export async function getTransactions(
   const orderBy: Record<string, string> = {};
   orderBy[sortBy] = sortDir;
 
-  // Execute query + count + sum in parallel
-  const [transactions, total, sumResult] = await Promise.all([
+  // Execute query + count + sum + uncategorized in parallel
+  const [transactions, total, sumResult, uncategorizedCount] = await Promise.all([
     prisma.transaction.findMany({
       where,
       orderBy,
@@ -166,6 +189,7 @@ export async function getTransactions(
       where,
       _sum: { amount: true },
     }),
+    prisma.transaction.count({ where: { ...where, categoryId: null } }),
   ]);
 
   return {
@@ -195,6 +219,7 @@ export async function getTransactions(
     }),
     total,
     totalAmount: toNumber(sumResult._sum.amount),
+    uncategorizedCount,
     page,
     pageSize,
   };

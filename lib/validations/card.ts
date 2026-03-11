@@ -30,6 +30,8 @@ export const cardSchema = z.object({
     .string()
     .regex(/^\d{4}$/, "Informe exatamente 4 dígitos numéricos"),
   holderName: z.string().min(1, "Titular é obrigatório"),
+  closingDay: z.number().int().min(1).max(31).nullable().optional(),
+  dueDay: z.number().int().min(1).max(31).nullable().optional(),
 });
 
 export const customCsvFormatSchema = z.object({

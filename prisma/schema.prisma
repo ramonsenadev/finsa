@@ -26,6 +26,7 @@ model User {
   monthSnapshots     MonthSnapshot[]
   csvFormats         CsvFormat[]
   preferences        UserPreference[]
+  skippedRecurrings   SkippedRecurring[]
   dismissedRecurrings DismissedRecurring[]
 
   @@map("users")
@@ -39,8 +40,11 @@ model Card {
   lastFourDigits  String?  @map("last_four_digits")
   holderName      String?  @map("holder_name")
   color           String?
+  closingDay      Int?     @map("closing_day")  // Day of month the statement closes (1-31)
+  dueDay          Int?     @map("due_day")       // Day of month the bill is due (1-31)
   csvFormatId     String?  @map("csv_format_id")
   isActive        Boolean  @default(true) @map("is_active")
+  deletedAt       DateTime? @map("deleted_at")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -116,7 +120,7 @@ model Transaction {
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  card     Card?     @relation(fields: [cardId], references: [id])
+  card     Card?     @relation(fields: [cardId], references: [id], onDelete: SetNull)
   category Category? @relation(fields: [categoryId], references: [id])
   import_  Import?   @relation(fields: [importId], references: [id])
 
@@ -140,7 +144,7 @@ model Import {
   manualPendingCount    Int      @default(0) @map("manual_pending_count")
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  card         Card          @relation(fields: [cardId], references: [id])
+  card         Card          @relation(fields: [cardId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@map("imports")
@@ -174,12 +178,14 @@ model RecurringExpense {
   dayOfMonth      Int?     @map("day_of_month")
   sourceType      String   @map("source_type") // card | pix | boleto | debito
   isActive        Boolean  @default(true) @map("is_active")
+  effectiveFrom   DateTime? @map("effective_from") @db.Date
   detectionMethod String   @map("detection_method") // manual | auto
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id])
+  skippedRecurrings SkippedRecurring[]
 
   @@map("recurring_expenses")
 }
@@ -261,6 +267,19 @@ model UserPreference {
 
   @@unique([userId, key])
   @@map("user_preferences")
+}
+
+model SkippedRecurring {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  recurringId     String   @map("recurring_id")
+  monthRef        String   @map("month_ref") // YYYY-MM
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurring RecurringExpense @relation(fields: [recurringId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recurringId, monthRef])
+  @@map("skipped_recurrings")
 }
 
 model DismissedRecurring {

@@ -7,6 +7,7 @@ import { CsvFormatsTab } from "./csv-formats-tab";
 import { PreferencesTab } from "./preferences-tab";
 import { CategorizationRulesTab } from "./categorization-rules-tab";
 import { DataTab } from "./data-tab";
+import type { ImportRecord } from "./import-list";
 import type { CsvFormatRow, CategorizationRuleRow } from "@/app/settings/actions";
 
 interface SettingsContentProps {
@@ -17,6 +18,7 @@ interface SettingsContentProps {
   csvFormats: CsvFormatRow[];
   categorizationRules: CategorizationRuleRow[];
   categories: { id: string; name: string; isParent: boolean }[];
+  imports: ImportRecord[];
 }
 
 export function SettingsContent({
@@ -27,6 +29,7 @@ export function SettingsContent({
   csvFormats,
   categorizationRules,
   categories,
+  imports,
 }: SettingsContentProps) {
   return (
     <Tabs defaultValue="income">
@@ -60,7 +63,7 @@ export function SettingsContent({
       </TabsContent>
 
       <TabsContent value="data" className="mt-6">
-        <DataTab />
+        <DataTab imports={imports} />
       </TabsContent>
     </Tabs>
   );

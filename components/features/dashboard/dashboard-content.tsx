@@ -57,7 +57,7 @@ export function DashboardContent() {
       ? (data.totalExpenses / data.totalIncome) * 100
       : null;
 
-  const isEmpty = data && data.totalExpenses === 0 && data.categoryBreakdown.length === 0;
+  const isEmpty = data && data.totalExpenses === 0 && data.categoryBreakdown.length === 0 && !data.hasIncome && data.totalInvestments === 0;
 
   return (
     <div className="space-y-6">
@@ -98,6 +98,7 @@ export function DashboardContent() {
         prevTotalExpenses={data.prevTotalExpenses}
         prevTotalInvestments={data.prevTotalInvestments}
         prevFreeBalance={data.prevFreeBalance}
+        cashFlow={data.cashFlow}
       />
 
       {/* Extra card for filtered modes */}

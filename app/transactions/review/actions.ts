@@ -47,7 +47,7 @@ export async function getReviewQueueTransactions(filters?: {
     where,
     include: {
       category: { select: { id: true, name: true, parentId: true } },
-      card: { select: { name: true } },
+      card: { select: { name: true, color: true } },
       import_: { select: { id: true, fileName: true } },
     },
     orderBy,
@@ -63,6 +63,11 @@ export async function getReviewQueueTransactions(filters?: {
     categoryName: t.category?.name ?? null,
     categorizationMethod: t.categorizationMethod,
     cardName: t.card?.name ?? null,
+    cardColor: t.card?.color ?? null,
+    isRecurring: t.isRecurring,
+    sourceType: t.sourceType,
+    installmentCurrent: t.installmentCurrent,
+    installmentTotal: t.installmentTotal,
     importId: t.importId,
     importFileName: t.import_?.fileName ?? null,
   }));

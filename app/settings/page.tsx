@@ -5,10 +5,11 @@ import {
   getCsvFormats,
   getCategorizationRules,
   getCategoriesFlat,
+  getImportsList,
 } from "./actions";
 
 export default async function SettingsPage() {
-  const [incomes, investments, recurringTolerance, csvFormats, categorizationRules, categories] =
+  const [incomes, investments, recurringTolerance, csvFormats, categorizationRules, categories, imports] =
     await Promise.all([
       prisma.income.findMany({ orderBy: { createdAt: "desc" } }),
       prisma.investment.findMany({ orderBy: { createdAt: "desc" } }),
@@ -16,6 +17,7 @@ export default async function SettingsPage() {
       getCsvFormats(),
       getCategorizationRules(),
       getCategoriesFlat(),
+      getImportsList(),
     ]);
 
   const incomeRows = incomes.map((i) => ({
@@ -57,6 +59,7 @@ export default async function SettingsPage() {
         csvFormats={csvFormats}
         categorizationRules={categorizationRules}
         categories={categories}
+        imports={imports}
       />
     </div>
   );

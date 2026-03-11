@@ -16,6 +16,7 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-recurring: #8b5cf6;
+  --color-recurring-foreground: #ffffff;
 
   /* shadcn/ui expected tokens */
   --color-primary: #6366f1;
@@ -63,6 +64,7 @@ html {
     --color-warning: #FBBF24;
     --color-error: #F87171;
     --color-recurring: #A78BFA;
+    --color-recurring-foreground: #0F1117;
 
     --color-primary: #818CF8;
     --color-primary-foreground: #0F1117;

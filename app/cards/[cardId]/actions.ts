@@ -24,7 +24,7 @@ export async function fetchCardDetail(cardId: string) {
   const userId = await getUserId();
 
   const card = await prisma.card.findFirst({
-    where: { id: cardId, userId },
+    where: { id: cardId, userId, deletedAt: null },
     select: {
       id: true,
       name: true,

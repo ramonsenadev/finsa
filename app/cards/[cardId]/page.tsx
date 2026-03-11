@@ -17,7 +17,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
   if (!user) notFound();
 
   const card = await prisma.card.findFirst({
-    where: { id: cardId, userId: user.id },
+    where: { id: cardId, userId: user.id, deletedAt: null },
     select: { id: true, name: true },
   });
 

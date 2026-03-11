@@ -41,6 +41,7 @@ interface EditRecurringModalProps {
       expectedAmount: number;
       dayOfMonth: number | null;
       sourceType: string;
+      effectiveFrom: string | null;
     }
   ) => Promise<void>;
 }
@@ -58,6 +59,7 @@ export function EditRecurringModal({
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [dayOfMonth, setDayOfMonth] = useState("");
   const [sourceType, setSourceType] = useState("pix");
+  const [effectiveFrom, setEffectiveFrom] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export function EditRecurringModal({
       setCategoryId(recurring.categoryId);
       setDayOfMonth(recurring.dayOfMonth ? String(recurring.dayOfMonth) : "");
       setSourceType(recurring.sourceType);
+      setEffectiveFrom(recurring.effectiveFrom ?? "");
     }
   }, [open, recurring]);
 
@@ -91,6 +94,7 @@ export function EditRecurringModal({
       expectedAmount: parseFloat(amount) || 0,
       dayOfMonth: dayOfMonth ? parseInt(dayOfMonth, 10) : null,
       sourceType,
+      effectiveFrom: effectiveFrom || null,
     });
     setSubmitting(false);
     onOpenChange(false);
@@ -142,6 +146,20 @@ export function EditRecurringModal({
               onChange={(e) => setDayOfMonth(e.target.value)}
               placeholder="Qualquer dia"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rec-effective-from">Vigência a partir de</Label>
+            <Input
+              id="rec-effective-from"
+              type="date"
+              value={effectiveFrom}
+              onChange={(e) => setEffectiveFrom(e.target.value)}
+              placeholder="Desde sempre"
+            />
+            <p className="text-xs text-foreground-secondary">
+              Deixe vazio para considerar desde sempre.
+            </p>
           </div>
 
           <div className="space-y-2">

@@ -16,7 +16,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CategoryCombobox } from "./category-combobox";
 import { categorizeTransactions } from "@/app/transactions/review/actions";
-import { ArrowUpDown, Check, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  countSameMerchantTransactions,
+  recategorizeTransaction,
+} from "@/app/transactions/actions";
+import { ArrowUpDown, Check, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { formatBRL } from "@/lib/format";
 
 type ReviewTransaction = {
   id: string;
@@ -28,8 +33,13 @@ type ReviewTransaction = {
   categoryName: string | null;
   categorizationMethod: string | null;
   cardName: string | null;
+  cardColor: string | null;
+  isRecurring: boolean;
   importId: string | null;
   importFileName: string | null;
+  installmentCurrent: number | null;
+  installmentTotal: number | null;
+  sourceType: string;
 };
 
 type Category = {
@@ -49,7 +59,6 @@ function ConfidenceBadge({ method }: { method: string | null }) {
     );
   }
 
-  // AI-categorized but in review queue means low confidence
   return (
     <Badge className="bg-warning/15 text-warning border-warning/30">
       IA
@@ -57,17 +66,136 @@ function ConfidenceBadge({ method }: { method: string | null }) {
   );
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
-
 function formatDate(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  }).format(d);
 }
+
+// ─── Merchant propagation confirm popover ────────────────────────────
+
+function MerchantConfirmPopover({
+  merchantInfo,
+  categoryName,
+  loading,
+  applying,
+  onApplyAll,
+  onApplyOne,
+  onCancel,
+  anchorRef,
+}: {
+  merchantInfo: { count: number; merchant: string } | null;
+  categoryName: string | null;
+  loading: boolean;
+  applying: boolean;
+  onApplyAll: () => void;
+  onApplyOne: () => void;
+  onCancel: () => void;
+  anchorRef: React.RefObject<HTMLElement | null>;
+}) {
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
+
+  useEffect(() => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const popoverHeight = 200;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < popoverHeight && rect.top > popoverHeight;
+    const left = Math.min(rect.left, window.innerWidth - 320 - 16);
+
+    if (openUp) {
+      setPosition({ bottom: window.innerHeight - rect.top + 4, left });
+    } else {
+      setPosition({ top: rect.bottom + 4, left });
+    }
+  }, [anchorRef]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
+        anchorRef.current && !anchorRef.current.contains(e.target as Node)
+      ) {
+        onCancel();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [anchorRef, onCancel]);
+
+  const positionStyle: React.CSSProperties = {
+    left: position.left,
+    ...(position.top != null ? { top: position.top } : {}),
+    ...(position.bottom != null ? { bottom: position.bottom } : {}),
+  };
+
+  return (
+    <div
+      ref={popoverRef}
+      className="fixed z-50 w-80 rounded-md border border-border bg-popover p-4 shadow-lg"
+      style={positionStyle}
+    >
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-foreground">
+            Alterar categoria para{" "}
+            <span className="font-semibold text-accent">{categoryName}</span>
+          </p>
+
+          {merchantInfo && merchantInfo.count > 1 && (
+            <p className="mt-2 text-sm text-foreground-secondary">
+              Encontramos{" "}
+              <span className="font-semibold text-foreground">
+                {merchantInfo.count}
+              </span>{" "}
+              transações de{" "}
+              <span className="font-medium text-foreground">
+                {merchantInfo.merchant}
+              </span>
+              . Deseja aplicar esta categoria a todas?
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2">
+            {merchantInfo && merchantInfo.count > 1 && (
+              <Button
+                size="sm"
+                onClick={onApplyAll}
+                disabled={applying}
+                className="w-full"
+              >
+                {applying && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                Aplicar a todas ({merchantInfo.count})
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onApplyOne}
+              disabled={applying}
+              className="w-full"
+            >
+              {applying && (!merchantInfo || merchantInfo.count <= 1) && (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              )}
+              {merchantInfo && merchantInfo.count > 1 ? "Apenas esta" : "Aplicar"}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────
 
 export function ReviewQueueTable({
   transactions: initialTransactions,
@@ -89,6 +217,17 @@ export function ReviewQueueTable({
   const lastSelectedCountRef = useRef(1);
   const batchButtonRef = useRef<HTMLButtonElement>(null);
   const rowButtonEls = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  // Merchant propagation state
+  const [confirmState, setConfirmState] = useState<{
+    transactionId: string;
+    categoryId: string;
+    categoryName: string | null;
+    merchantInfo: { count: number; merchant: string } | null;
+    loading: boolean;
+    applying: boolean;
+    anchorIndex: number;
+  } | null>(null);
 
   // Sync with new data from server
   useEffect(() => {
@@ -115,7 +254,19 @@ export function ReviewQueueTable({
     );
   }, [transactions]);
 
-  const handleCategorize = useCallback(
+  // Find category name from id
+  function getCategoryName(categoryId: string): string | null {
+    const cat = categories.find((c) => c.id === categoryId);
+    if (!cat) return null;
+    if (cat.parentId) {
+      const parent = categories.find((c) => c.id === cat.parentId);
+      return parent ? `${parent.name} › ${cat.name}` : cat.name;
+    }
+    return cat.name;
+  }
+
+  // Direct categorization (batch or when no merchant propagation needed)
+  const handleDirectCategorize = useCallback(
     async (transactionIds: string[], categoryId: string) => {
       setLoading((prev) => {
         const next = new Set(prev);
@@ -123,9 +274,6 @@ export function ReviewQueueTable({
         return next;
       });
 
-      // Determine if this is accepting an AI suggestion or a manual override.
-      // If all selected transactions had AI suggestion with the same categoryId,
-      // treat as AI acceptance (source='ai'). Otherwise, source='manual'.
       const selectedTxs = transactions.filter((t) =>
         transactionIds.includes(t.id)
       );
@@ -143,7 +291,6 @@ export function ReviewQueueTable({
       );
 
       if (result.success) {
-        // Remove categorized transactions from the list
         setTransactions((prev) =>
           prev.filter((t) => !transactionIds.includes(t.id))
         );
@@ -161,7 +308,6 @@ export function ReviewQueueTable({
             : `${transactionIds.length} transações categorizadas`
         );
 
-        // Adjust active row if needed
         setActiveRow((prev) =>
           Math.min(prev, Math.max(0, transactions.length - transactionIds.length - 1))
         );
@@ -176,10 +322,80 @@ export function ReviewQueueTable({
     [transactions]
   );
 
+  // Single-transaction categorization with merchant propagation check
+  async function handleCategorizeWithPropagation(
+    transactionId: string,
+    categoryId: string,
+    anchorIndex: number
+  ) {
+    setOpenComboboxRow(null);
+    setConfirmState({
+      transactionId,
+      categoryId,
+      categoryName: getCategoryName(categoryId),
+      merchantInfo: null,
+      loading: true,
+      applying: false,
+      anchorIndex,
+    });
+
+    const info = await countSameMerchantTransactions(transactionId);
+
+    if (info.count <= 1) {
+      // No other transactions from this merchant — apply directly
+      setConfirmState(null);
+      await handleDirectCategorize([transactionId], categoryId);
+    } else {
+      setConfirmState((prev) =>
+        prev ? { ...prev, merchantInfo: info, loading: false } : null
+      );
+    }
+  }
+
+  async function handleConfirmApplyAll() {
+    if (!confirmState) return;
+    const { transactionId, categoryId, merchantInfo } = confirmState;
+    setConfirmState((prev) => prev ? { ...prev, applying: true } : null);
+
+    const result = await recategorizeTransaction(transactionId, categoryId, true);
+
+    if (result.success) {
+      const affectedIds = new Set(result.matchingIds ?? [transactionId]);
+      setTransactions((prev) => prev.filter((t) => !affectedIds.has(t.id)));
+      setCategorizedCount((c) => c + affectedIds.size);
+      toast.success(
+        `Categoria aplicada a ${merchantInfo?.count ?? 1} transações`
+      );
+    }
+
+    setConfirmState(null);
+  }
+
+  async function handleConfirmApplyOne() {
+    if (!confirmState) return;
+    const { transactionId, categoryId } = confirmState;
+    setConfirmState((prev) => prev ? { ...prev, applying: true } : null);
+
+    await handleDirectCategorize([transactionId], categoryId);
+    setConfirmState(null);
+  }
+
+  // Wrapper for combobox selection — single tx gets propagation, batch goes direct
+  const handleCategorize = useCallback(
+    async (transactionIds: string[], categoryId: string, anchorIndex?: number) => {
+      if (transactionIds.length === 1 && anchorIndex !== undefined) {
+        await handleCategorizeWithPropagation(transactionIds[0], categoryId, anchorIndex);
+      } else {
+        await handleDirectCategorize(transactionIds, categoryId);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handleDirectCategorize]
+  );
+
   // Keyboard navigation
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Don't capture if focus is inside combobox search input
       if (
         e.target instanceof HTMLInputElement &&
         e.target.type === "text"
@@ -187,7 +403,7 @@ export function ReviewQueueTable({
         return;
       }
 
-      if (batchComboboxOpen) return;
+      if (batchComboboxOpen || confirmState) return;
 
       switch (e.key) {
         case "ArrowDown":
@@ -222,7 +438,7 @@ export function ReviewQueueTable({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [activeRow, transactions, toggleSelect, batchComboboxOpen]);
+  }, [activeRow, transactions, toggleSelect, batchComboboxOpen, confirmState]);
 
   // Scroll active row into view
   useEffect(() => {
@@ -238,7 +454,7 @@ export function ReviewQueueTable({
 
   if (transactions.length === 0 && categorizedCount === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16 text-foreground-secondary">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-muted/50 py-16 text-foreground-secondary">
         <CheckCircle2 className="h-12 w-12 text-success" />
         <p className="text-lg font-medium text-foreground">
           Nenhuma transação pendente
@@ -268,23 +484,9 @@ export function ReviewQueueTable({
     <div ref={tableRef}>
       {/* Header counters */}
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm text-foreground-secondary">
-          <span>
-            Total na fila:{" "}
-            <span className="font-semibold text-foreground">{totalCount}</span>
-          </span>
-          <span className="text-border">|</span>
-          <span>
-            Categorizados nesta sessão:{" "}
-            <span className="font-semibold text-success">{categorizedCount}</span>
-          </span>
-          <span className="text-border">|</span>
-          <span>
-            Restantes:{" "}
-            <span className="font-semibold text-foreground">
-              {remainingCount}
-            </span>
-          </span>
+        <div className="text-sm text-foreground-secondary">
+          <span className="font-semibold text-foreground">{remainingCount}</span>{" "}
+          {remainingCount === 1 ? "transação na fila" : "transações na fila"}
         </div>
 
         {/* Batch action — always rendered to prevent layout shift */}
@@ -302,7 +504,7 @@ export function ReviewQueueTable({
               categories={categories}
               value={null}
               onSelect={(catId) =>
-                handleCategorize(Array.from(selected), catId)
+                handleDirectCategorize(Array.from(selected), catId)
               }
               onClose={() => setBatchComboboxOpen(false)}
               anchorRef={batchButtonRef}
@@ -345,6 +547,7 @@ export function ReviewQueueTable({
                 <ArrowUpDown className="h-3 w-3" />
               </button>
             </TableHead>
+            <TableHead>Origem</TableHead>
             <TableHead className="text-right">
               <button
                 type="button"
@@ -379,21 +582,64 @@ export function ReviewQueueTable({
                   aria-label={`Selecionar ${tx.description}`}
                 />
               </TableCell>
-              <TableCell className="text-foreground-secondary">
+              <TableCell className="whitespace-nowrap text-foreground-secondary">
                 {formatDate(tx.date)}
               </TableCell>
               <TableCell>
-                <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
                   <span className="font-medium">{tx.originalTitle}</span>
-                  {tx.cardName && (
-                    <span className="text-xs text-foreground-secondary">
-                      {tx.cardName}
+                  {tx.installmentTotal && tx.installmentTotal > 1 && (
+                    <Badge
+                      variant="outline"
+                      className="px-1.5 py-0 text-[10px]"
+                    >
+                      {tx.installmentCurrent}/{tx.installmentTotal}
+                    </Badge>
+                  )}
+                  {tx.isRecurring && (
+                    <span
+                      className="inline-flex items-center rounded-full bg-recurring/10 p-1"
+                      title="Recorrente"
+                    >
+                      <RefreshCw className="h-3 w-3 text-recurring" />
                     </span>
                   )}
                 </div>
               </TableCell>
-              <TableCell className="text-right font-medium tabular-nums">
-                {formatCurrency(tx.amount)}
+              <TableCell>
+                {tx.sourceType === "manual" ? (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-accent/40 bg-accent/10 text-xs text-accent"
+                  >
+                    Manual
+                  </Badge>
+                ) : tx.cardName ? (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 text-xs"
+                    style={
+                      tx.cardColor
+                        ? {
+                            borderColor: tx.cardColor + "40",
+                            backgroundColor: tx.cardColor + "10",
+                            color: tx.cardColor,
+                          }
+                        : undefined
+                    }
+                  >
+                    {tx.cardColor && (
+                      <span
+                        className="inline-block h-2 w-2 rounded-full"
+                        style={{ backgroundColor: tx.cardColor }}
+                      />
+                    )}
+                    {tx.cardName}
+                  </Badge>
+                ) : null}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">
+                {formatBRL(tx.amount)}
               </TableCell>
               <TableCell>
                 {tx.categoryName ? (
@@ -421,7 +667,7 @@ export function ReviewQueueTable({
                         title="Aceitar sugestão da IA"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleCategorize([tx.id], tx.categoryId!);
+                          handleCategorize([tx.id], tx.categoryId!, index);
                         }}
                         className="rounded-md border border-success/30 bg-success/10 px-2 py-1.5 text-sm text-success transition-colors hover:bg-success/20"
                       >
@@ -453,7 +699,7 @@ export function ReviewQueueTable({
                       <CategoryCombobox
                         categories={categories}
                         value={null}
-                        onSelect={(catId) => handleCategorize([tx.id], catId)}
+                        onSelect={(catId) => handleCategorize([tx.id], catId, index)}
                         onClose={() => setOpenComboboxRow(null)}
                         anchorRef={{ current: rowButtonEls.current.get(index) ?? null }}
                         autoFocus
@@ -466,6 +712,20 @@ export function ReviewQueueTable({
           ))}
         </TableBody>
       </Table>
+
+      {/* Merchant propagation confirm popover */}
+      {confirmState && (
+        <MerchantConfirmPopover
+          merchantInfo={confirmState.merchantInfo}
+          categoryName={confirmState.categoryName}
+          loading={confirmState.loading}
+          applying={confirmState.applying}
+          onApplyAll={handleConfirmApplyAll}
+          onApplyOne={handleConfirmApplyOne}
+          onCancel={() => setConfirmState(null)}
+          anchorRef={{ current: rowButtonEls.current.get(confirmState.anchorIndex) ?? null }}
+        />
+      )}
 
       {/* Keyboard hints */}
       <div className="mt-4 flex items-center gap-4 text-xs text-foreground-secondary">

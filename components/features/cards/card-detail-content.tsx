@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ interface CardDetailContentProps {
 }
 
 export function CardDetailContent({ cardId }: CardDetailContentProps) {
+  const queryClient = useQueryClient();
   const [monthRef, setMonthRef] = useState(getCurrentMonthRef());
   const [txPage, setTxPage] = useState(1);
   const [txFilters, setTxFilters] = useState<{
@@ -75,6 +76,14 @@ export function CardDetailContent({ cardId }: CardDetailContentProps) {
     queryKey: ["all-categories"],
     queryFn: () => fetchAllCategories(),
   });
+
+  const handleImportDeleted = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["card-imports", cardId] });
+    queryClient.invalidateQueries({ queryKey: ["card-transactions", cardId] });
+    queryClient.invalidateQueries({ queryKey: ["card-summary", cardId] });
+    queryClient.invalidateQueries({ queryKey: ["card-categories", cardId] });
+    queryClient.invalidateQueries({ queryKey: ["card-evolution", cardId] });
+  }, [queryClient, cardId]);
 
   if (cardLoading) {
     return (
@@ -160,7 +169,7 @@ export function CardDetailContent({ cardId }: CardDetailContentProps) {
       </div>
 
       {/* Import history */}
-      <CardImportsHistory imports={imports ?? []} />
+      <CardImportsHistory imports={imports ?? []} onDeleted={handleImportDeleted} />
 
       {/* Transactions */}
       <CardTransactionsList

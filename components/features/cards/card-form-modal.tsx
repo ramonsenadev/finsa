@@ -38,6 +38,8 @@ interface CardFormModalProps {
     issuer: string;
     lastFourDigits: string | null;
     holderName: string | null;
+    closingDay: number | null;
+    dueDay: number | null;
     csvFormatId: string | null;
   } | null;
 }
@@ -51,6 +53,8 @@ export function CardFormModal({
   const [issuer, setIssuer] = useState<Issuer>("nubank");
   const [lastFourDigits, setLastFourDigits] = useState("");
   const [holderName, setHolderName] = useState("");
+  const [closingDay, setClosingDay] = useState("");
+  const [dueDay, setDueDay] = useState("");
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,11 +74,15 @@ export function CardFormModal({
       setIssuer(editingCard.issuer as Issuer);
       setLastFourDigits(editingCard.lastFourDigits ?? "");
       setHolderName(editingCard.holderName ?? "");
+      setClosingDay(editingCard.closingDay?.toString() ?? "");
+      setDueDay(editingCard.dueDay?.toString() ?? "");
     } else {
       setName("");
       setIssuer("nubank");
       setLastFourDigits("");
       setHolderName("");
+      setClosingDay("");
+      setDueDay("");
     }
     setErrors({});
     setCsvDelimiter(";");
@@ -99,6 +107,8 @@ export function CardFormModal({
       issuer,
       lastFourDigits,
       holderName,
+      closingDay: closingDay ? parseInt(closingDay, 10) : null,
+      dueDay: dueDay ? parseInt(dueDay, 10) : null,
     };
 
     const parsed = cardSchema.safeParse(formData);
@@ -213,6 +223,43 @@ export function CardFormModal({
             {errors.holderName && (
               <p className="text-xs text-error">{errors.holderName[0]}</p>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="closingDay">Dia de fechamento</Label>
+              <Input
+                id="closingDay"
+                placeholder="Ex: 15"
+                value={closingDay}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                  setClosingDay(v);
+                }}
+                inputMode="numeric"
+                maxLength={2}
+              />
+              {errors.closingDay && (
+                <p className="text-xs text-error">{errors.closingDay[0]}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="dueDay">Dia de vencimento</Label>
+              <Input
+                id="dueDay"
+                placeholder="Ex: 10"
+                value={dueDay}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                  setDueDay(v);
+                }}
+                inputMode="numeric"
+                maxLength={2}
+              />
+              {errors.dueDay && (
+                <p className="text-xs text-error">{errors.dueDay[0]}</p>
+              )}
+            </div>
           </div>
 
           {issuer === "outro" && (

@@ -131,8 +131,8 @@ export function CategoryFormModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3">
             <Label htmlFor="cat-name">Nome</Label>
             <Input
               id="cat-name"
@@ -146,7 +146,7 @@ export function CategoryFormModal({
           </div>
 
           {!(isEditing && editingCategory?.isSystem) && (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-3">
               <Label>Categoria pai (opcional)</Label>
               <Select
                 value={parentId ?? "__none__"}
@@ -176,7 +176,7 @@ export function CategoryFormModal({
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-3">
             <Label>Cor</Label>
             <ColorPicker value={color} onChange={setColor} />
             {errors.color && (
@@ -184,7 +184,7 @@ export function CategoryFormModal({
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-3">
             <Label>Ícone</Label>
             <IconPicker value={icon} onChange={setIcon} color={color} />
             {errors.icon && (

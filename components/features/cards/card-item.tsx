@@ -1,9 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { CreditCard, Pencil } from "lucide-react";
+import {
+  CreditCard,
+  EllipsisVertical,
+  Pencil,
+  Power,
+  PowerOff,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ISSUER_LABELS,
   ISSUER_COLORS,
@@ -18,13 +31,16 @@ interface CardItemProps {
     issuer: string;
     lastFourDigits: string | null;
     holderName: string | null;
+    closingDay: number | null;
+    dueDay: number | null;
     isActive: boolean;
     csvFormatId: string | null;
   };
   onEdit: (card: CardItemProps["card"]) => void;
+  onDelete: (card: CardItemProps["card"]) => void;
 }
 
-export function CardItem({ card, onEdit }: CardItemProps) {
+export function CardItem({ card, onEdit, onDelete }: CardItemProps) {
   const issuer = card.issuer as Issuer;
   const issuerColor = ISSUER_COLORS[issuer] ?? ISSUER_COLORS.outro;
   const issuerLabel = ISSUER_LABELS[issuer] ?? card.issuer;
@@ -59,33 +75,62 @@ export function CardItem({ card, onEdit }: CardItemProps) {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onEdit(card);
-            }}
-            className="rounded-md p-1.5 text-foreground-secondary opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
-            title="Editar cartão"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <div
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            <Switch
-              checked={card.isActive}
-              onCheckedChange={handleToggle}
-              aria-label={card.isActive ? "Desativar cartão" : "Ativar cartão"}
-            />
-          </div>
-        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="rounded-md p-1.5 text-foreground-secondary opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+              aria-label="Opções do cartão"
+            >
+              <EllipsisVertical className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(card);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggle();
+              }}
+            >
+              {card.isActive ? (
+                <>
+                  <PowerOff className="h-4 w-4" />
+                  Desativar
+                </>
+              ) : (
+                <>
+                  <Power className="h-4 w-4" />
+                  Ativar
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(card);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="flex items-center justify-between">

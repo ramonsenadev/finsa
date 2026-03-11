@@ -61,6 +61,8 @@ export async function createCard(
       issuer: parsed.data.issuer,
       lastFourDigits: parsed.data.lastFourDigits,
       holderName: parsed.data.holderName,
+      closingDay: parsed.data.closingDay ?? null,
+      dueDay: parsed.data.dueDay ?? null,
       color: null,
       csvFormatId,
     },
@@ -133,6 +135,8 @@ export async function updateCard(
       issuer: parsed.data.issuer,
       lastFourDigits: parsed.data.lastFourDigits,
       holderName: parsed.data.holderName,
+      closingDay: parsed.data.closingDay ?? null,
+      dueDay: parsed.data.dueDay ?? null,
       csvFormatId,
     },
   });
@@ -141,8 +145,76 @@ export async function updateCard(
   return { success: true };
 }
 
+export async function getCardDeleteInfo(id: string) {
+  const userId = await getUserId();
+  const card = await prisma.card.findFirst({
+    where: { id, userId, deletedAt: null },
+    select: { id: true, name: true },
+  });
+  if (!card) return null;
+
+  const transactionCount = await prisma.transaction.count({
+    where: { cardId: id },
+  });
+  const importCount = await prisma.import.count({
+    where: { cardId: id },
+  });
+
+  return { ...card, transactionCount, importCount };
+}
+
+export async function deleteCard(
+  id: string,
+  deleteTransactions: boolean
+) {
+  const userId = await getUserId();
+  const card = await prisma.card.findFirst({
+    where: { id, userId, deletedAt: null },
+  });
+  if (!card) return { error: "Cartão não encontrado" };
+
+  if (deleteTransactions) {
+    // Find affected months to invalidate snapshots
+    const affectedMonths = await prisma.transaction.findMany({
+      where: { cardId: id },
+      select: { date: true },
+      distinct: ["date"],
+    });
+    const monthRefs = [
+      ...new Set(
+        affectedMonths.map((tx) => {
+          const d = tx.date;
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        })
+      ),
+    ];
+
+    // Hard delete: remove transactions first, then card (imports cascade)
+    await prisma.transaction.deleteMany({ where: { cardId: id } });
+    await prisma.card.delete({ where: { id } });
+
+    // Invalidate snapshots for affected months
+    if (monthRefs.length > 0) {
+      await prisma.monthSnapshot.deleteMany({
+        where: { userId, monthRef: { in: monthRefs } },
+      });
+    }
+  } else {
+    // Soft delete: card disappears from UI, transactions keep cardId
+    await prisma.card.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  revalidatePath("/cards");
+  revalidatePath("/transactions");
+  revalidatePath("/");
+  return { success: true };
+}
+
 export async function toggleCardActive(id: string) {
-  const card = await prisma.card.findUnique({ where: { id } });
+  const card = await prisma.card.findFirst({ where: { id, deletedAt: null } });
   if (!card) return { error: "Cartão não encontrado" };
 
   await prisma.card.update({

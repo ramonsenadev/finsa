@@ -3,8 +3,9 @@
 import { useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MonthSelector, getCurrentMonthRef } from "@/components/ui/month-selector";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
   type CategoryOption,
 } from "./transaction-filters";
 import { TransactionsTable } from "./transactions-table";
+import { ManualTransactionModal } from "./manual-transaction-modal";
 import {
   fetchTransactions,
   fetchTransactionsForExport,
@@ -108,13 +110,44 @@ function downloadCsv(rows: { date: string; description: string; amount: number; 
   URL.revokeObjectURL(url);
 }
 
+// ─── Month helpers ───────────────────────────────────────────────────
+
+/** Check if dateStart/dateEnd exactly match a full month range (YYYY-MM-01 to last day) */
+function getMonthRefFromFilters(filters: FilterValues): string | null {
+  if (!filters.dateStart || !filters.dateEnd) return null;
+  const [sy, sm] = filters.dateStart.split("-").map(Number);
+  if (filters.dateStart !== `${sy}-${String(sm).padStart(2, "0")}-01`) return null;
+  const lastDay = new Date(sy, sm, 0).getDate();
+  if (filters.dateEnd !== `${sy}-${String(sm).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`) return null;
+  return `${sy}-${String(sm).padStart(2, "0")}`;
+}
+
+function monthRefToDateRange(monthRef: string): { dateStart: string; dateEnd: string } {
+  const [year, month] = monthRef.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return {
+    dateStart: `${monthRef}-01`,
+    dateEnd: `${monthRef}-${String(lastDay).padStart(2, "0")}`,
+  };
+}
+
 // ─── Component ───────────────────────────────────────────────────────
 
 export function TransactionsContent() {
   const searchParams = useSearchParams();
+  const [manualModalOpen, setManualModalOpen] = useState(false);
 
   // Local state initialized from URL — this is the source of truth
-  const [state, setState] = useState<FullState>(() => stateFromParams(searchParams));
+  const [state, setState] = useState<FullState>(() => {
+    const initial = stateFromParams(searchParams);
+    // Default to current month if no date filters
+    if (!initial.filters.dateStart && !initial.filters.dateEnd) {
+      const range = monthRefToDateRange(getCurrentMonthRef());
+      initial.filters.dateStart = range.dateStart;
+      initial.filters.dateEnd = range.dateEnd;
+    }
+    return initial;
+  });
 
   // Sync URL without triggering Next.js navigation
   const updateState = useCallback((newState: FullState) => {
@@ -156,6 +189,18 @@ export function TransactionsContent() {
     queryFn: () => fetchTransactions(queryFilters),
   });
 
+  // Derive active month from date filters (null if custom range)
+  const activeMonthRef = getMonthRefFromFilters(state.filters) ?? getCurrentMonthRef();
+
+  function handleMonthChange(newMonth: string) {
+    const range = monthRefToDateRange(newMonth);
+    updateState({
+      ...state,
+      filters: { ...state.filters, dateStart: range.dateStart, dateEnd: range.dateEnd },
+      page: 1,
+    });
+  }
+
   function handleFiltersChange(newFilters: FilterValues) {
     updateState({ ...state, filters: newFilters, page: 1 });
   }
@@ -175,16 +220,13 @@ export function TransactionsContent() {
 
   return (
     <div className="space-y-4">
-      {/* Filters — always visible */}
-      <TransactionFilters
-        filters={state.filters}
-        onFiltersChange={handleFiltersChange}
-        cards={cards}
-        categories={categories}
-      />
-
-      {/* Export button */}
-      <div className="flex justify-end">
+      {/* Row 1: MonthSelector (left) + Export (right) */}
+      <div className="flex items-center justify-between">
+        <MonthSelector
+          monthRef={activeMonthRef}
+          onChange={handleMonthChange}
+          disableFuture={false}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={!result || result.total === 0}>
@@ -205,6 +247,25 @@ export function TransactionsContent() {
         </DropdownMenu>
       </div>
 
+      {/* Row 2: Search + Filters + New Transaction */}
+      <TransactionFilters
+        filters={state.filters}
+        onFiltersChange={handleFiltersChange}
+        cards={cards}
+        categories={categories}
+        activeMonthRef={activeMonthRef}
+        headerActions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setManualModalOpen(true)}
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Transação
+          </Button>
+        }
+      />
+
       {/* Table */}
       {isLoading && !result ? (
         <div className="space-y-3">
@@ -217,6 +278,7 @@ export function TransactionsContent() {
             transactions={result.transactions}
             total={result.total}
             totalAmount={result.totalAmount}
+            uncategorizedCount={result.uncategorizedCount}
             page={result.page}
             pageSize={result.pageSize}
             sortBy={state.sortBy}
@@ -228,6 +290,15 @@ export function TransactionsContent() {
           />
         </div>
       ) : null}
+
+      {/* Manual transaction modal */}
+      <ManualTransactionModal
+        open={manualModalOpen}
+        onOpenChange={setManualModalOpen}
+        editingTransaction={null}
+        categories={categories}
+        onSaved={() => refetch()}
+      />
     </div>
   );
 }

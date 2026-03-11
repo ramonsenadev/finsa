@@ -4,10 +4,15 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, Trash2, AlertTriangle } from "lucide-react";
+import { Download, Trash2, AlertTriangle, FileText } from "lucide-react";
 import { exportAllData, wipeAllData } from "@/app/settings/actions";
+import { ImportList, type ImportRecord } from "./import-list";
 
-export function DataTab() {
+interface DataTabProps {
+  imports: ImportRecord[];
+}
+
+export function DataTab({ imports }: DataTabProps) {
   const [isPending, startTransition] = useTransition();
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -58,6 +63,18 @@ export function DataTab() {
               ? "Exportando..."
               : "Exportar todos os dados"}
         </Button>
+      </div>
+
+      {/* Import History */}
+      <div className="rounded-lg border border-border bg-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <FileText className="h-4 w-4 text-foreground-secondary" />
+          <h3 className="text-base font-semibold">Importações</h3>
+        </div>
+        <p className="mb-4 text-sm text-foreground-secondary">
+          Gerencie suas importações de CSV. Excluir uma importação remove todas as transações associadas.
+        </p>
+        <ImportList imports={imports} />
       </div>
 
       {/* Wipe */}

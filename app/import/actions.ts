@@ -23,7 +23,7 @@ async function getUserId() {
 export async function getActiveCards() {
   const userId = await getUserId();
   return prisma.card.findMany({
-    where: { userId, isActive: true },
+    where: { userId, isActive: true, deletedAt: null },
     select: {
       id: true,
       name: true,

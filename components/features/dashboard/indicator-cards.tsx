@@ -23,7 +23,7 @@ function DeltaBadge({
   previous: number;
   invertTrend?: boolean;
 }) {
-  if (previous === 0) return null;
+  if (previous === 0 || current === previous) return null;
   // Use Math.abs(previous) to avoid sign inversion when previous is negative
   // (e.g. Saldo Livre going from -15000 to -200 is an improvement, not -98%)
   const delta = ((current - previous) / Math.abs(previous)) * 100;
@@ -97,6 +97,13 @@ function IndicatorCard({
   );
 }
 
+interface CashFlowData {
+  totalOutflow: number;
+  cardBills: number;
+  manualExpenses: number;
+  cashBalance: number;
+}
+
 interface IndicatorCardsProps {
   totalIncome: number;
   totalExpenses: number;
@@ -107,6 +114,7 @@ interface IndicatorCardsProps {
   prevTotalExpenses: number | null;
   prevTotalInvestments: number | null;
   prevFreeBalance: number | null;
+  cashFlow?: CashFlowData | null;
 }
 
 export function IndicatorCards({
@@ -119,51 +127,100 @@ export function IndicatorCards({
   prevTotalExpenses,
   prevTotalInvestments,
   prevFreeBalance,
+  cashFlow,
 }: IndicatorCardsProps) {
   const income = hasIncome ? totalIncome : null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <IndicatorCard
-        label="Renda Total"
-        value={income}
-        previousValue={prevTotalIncome}
-        hasIncome={hasIncome}
-      />
-      <IndicatorCard
-        label="Total Gastos"
-        value={totalExpenses}
-        percentOfIncome={
-          hasIncome && totalIncome > 0
-            ? (totalExpenses / totalIncome) * 100
-            : null
-        }
-        previousValue={prevTotalExpenses}
-        invertTrend
-        hasIncome={hasIncome}
-      />
-      <IndicatorCard
-        label="Total Investido"
-        value={totalInvestments}
-        percentOfIncome={
-          hasIncome && totalIncome > 0
-            ? (totalInvestments / totalIncome) * 100
-            : null
-        }
-        previousValue={prevTotalInvestments}
-        hasIncome={hasIncome}
-      />
-      <IndicatorCard
-        label="Saldo Livre"
-        value={hasIncome ? freeBalance : null}
-        percentOfIncome={
-          hasIncome && totalIncome > 0
-            ? (freeBalance / totalIncome) * 100
-            : null
-        }
-        previousValue={prevFreeBalance}
-        hasIncome={hasIncome}
-      />
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <IndicatorCard
+          label="Renda Total"
+          value={income}
+          previousValue={prevTotalIncome}
+          hasIncome={hasIncome}
+        />
+        <IndicatorCard
+          label="Total Gastos"
+          value={totalExpenses}
+          percentOfIncome={
+            hasIncome && totalIncome > 0
+              ? (totalExpenses / totalIncome) * 100
+              : null
+          }
+          previousValue={prevTotalExpenses}
+          invertTrend
+          hasIncome={hasIncome}
+        />
+        <IndicatorCard
+          label="Total Investido"
+          value={totalInvestments}
+          percentOfIncome={
+            hasIncome && totalIncome > 0
+              ? (totalInvestments / totalIncome) * 100
+              : null
+          }
+          previousValue={prevTotalInvestments}
+          hasIncome={hasIncome}
+        />
+        <IndicatorCard
+          label="Saldo Livre"
+          value={hasIncome ? freeBalance : null}
+          percentOfIncome={
+            hasIncome && totalIncome > 0
+              ? (freeBalance / totalIncome) * 100
+              : null
+          }
+          previousValue={prevFreeBalance}
+          hasIncome={hasIncome}
+        />
+      </div>
+
+      {cashFlow && (
+        <Card className="border-accent/20 bg-accent/5">
+          <div className="flex items-center gap-6 px-4 py-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+              <ArrowRight className="h-5 w-5 text-accent" />
+            </div>
+            <div className="flex flex-1 flex-wrap items-center gap-x-8 gap-y-2">
+              <div>
+                <p className="text-xs font-medium text-foreground-secondary">
+                  Fluxo de Caixa
+                </p>
+                <p className="text-xl font-bold text-foreground">
+                  {formatBRL(cashFlow.totalOutflow)}
+                </p>
+              </div>
+              <div className="flex items-center gap-6 text-sm text-foreground-secondary">
+                <span>
+                  Faturas:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatBRL(cashFlow.cardBills)}
+                  </span>
+                </span>
+                <span>
+                  Manual:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatBRL(cashFlow.manualExpenses)}
+                  </span>
+                </span>
+                {hasIncome && (
+                  <span>
+                    Saldo caixa:{" "}
+                    <span
+                      className={`font-semibold ${
+                        cashFlow.cashBalance >= 0 ? "text-success" : "text-error"
+                      }`}
+                    >
+                      {formatBRL(cashFlow.cashBalance)}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

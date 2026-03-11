@@ -18,6 +18,11 @@ async function getUserId() {
   return user.id;
 }
 
+async function invalidateAllSnapshots(userId: string) {
+  await prisma.monthSnapshot.deleteMany({ where: { userId } });
+  revalidatePath("/");
+}
+
 // ── Income ──
 
 export async function createIncome(data: IncomeFormData) {
@@ -38,6 +43,7 @@ export async function createIncome(data: IncomeFormData) {
     },
   });
 
+  await invalidateAllSnapshots(userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -61,6 +67,7 @@ export async function updateIncome(id: string, data: IncomeFormData) {
     },
   });
 
+  await invalidateAllSnapshots(income.userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -74,6 +81,7 @@ export async function toggleIncomeActive(id: string) {
     data: { isActive: !income.isActive },
   });
 
+  await invalidateAllSnapshots(income.userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -84,6 +92,7 @@ export async function deleteIncome(id: string) {
 
   await prisma.income.delete({ where: { id } });
 
+  await invalidateAllSnapshots(income.userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -108,6 +117,7 @@ export async function createInvestment(data: InvestmentFormData) {
     },
   });
 
+  await invalidateAllSnapshots(userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -131,6 +141,7 @@ export async function updateInvestment(id: string, data: InvestmentFormData) {
     },
   });
 
+  await invalidateAllSnapshots(investment.userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -144,6 +155,7 @@ export async function toggleInvestmentActive(id: string) {
     data: { isActive: !investment.isActive },
   });
 
+  await invalidateAllSnapshots(investment.userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -154,6 +166,7 @@ export async function deleteInvestment(id: string) {
 
   await prisma.investment.delete({ where: { id } });
 
+  await invalidateAllSnapshots(investment.userId);
   revalidatePath("/settings");
   return { success: true };
 }
@@ -327,7 +340,7 @@ export async function exportAllData() {
     preferences,
   ] = await Promise.all([
     prisma.transaction.findMany({ where: { userId }, orderBy: { date: "desc" } }),
-    prisma.card.findMany({ where: { userId } }),
+    prisma.card.findMany({ where: { userId, deletedAt: null } }),
     prisma.category.findMany({ where: { OR: [{ userId }, { isSystem: true }] } }),
     prisma.income.findMany({ where: { userId } }),
     prisma.investment.findMany({ where: { userId } }),
@@ -377,6 +390,72 @@ export async function wipeAllData() {
 
   revalidatePath("/");
   revalidatePath("/settings");
+  return { success: true };
+}
+
+// ── Import Management ──
+
+export async function getImportsList(cardId?: string) {
+  const userId = await getUserId();
+
+  const imports = await prisma.import.findMany({
+    where: { userId, ...(cardId ? { cardId } : {}) },
+    include: {
+      card: { select: { name: true, color: true } },
+    },
+    orderBy: { importedAt: "desc" },
+  });
+
+  return imports.map((imp) => ({
+    id: imp.id,
+    fileName: imp.fileName,
+    monthRef: imp.monthRef,
+    importedAt: imp.importedAt,
+    txCount: imp.txCount,
+    autoCategorizedCount: imp.autoCategorizedCount,
+    cardName: imp.card.name,
+    cardColor: imp.card.color,
+  }));
+}
+
+export async function deleteImport(importId: string) {
+  const userId = await getUserId();
+
+  const imp = await prisma.import.findFirst({
+    where: { id: importId, userId },
+    select: { id: true, monthRef: true },
+  });
+
+  if (!imp) return { error: "Importação não encontrada" };
+
+  // Find all affected months from the transactions
+  const affectedMonths = await prisma.transaction.findMany({
+    where: { importId },
+    select: { date: true },
+    distinct: ["date"],
+  });
+  const monthRefs = [
+    ...new Set(
+      affectedMonths.map((tx) => {
+        const d = tx.date;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      })
+    ),
+  ];
+
+  await prisma.$transaction([
+    prisma.transaction.deleteMany({ where: { importId } }),
+    prisma.import.delete({ where: { id: importId } }),
+    // Invalidate snapshots for affected months
+    ...(monthRefs.length > 0
+      ? [prisma.monthSnapshot.deleteMany({ where: { userId, monthRef: { in: monthRefs } } })]
+      : []),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath("/settings");
+  revalidatePath("/transactions");
+  revalidatePath("/cards");
   return { success: true };
 }
 

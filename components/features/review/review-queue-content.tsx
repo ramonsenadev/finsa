@@ -20,6 +20,11 @@ type ReviewTransaction = {
   categoryName: string | null;
   categorizationMethod: string | null;
   cardName: string | null;
+  cardColor: string | null;
+  isRecurring: boolean;
+  sourceType: string;
+  installmentCurrent: number | null;
+  installmentTotal: number | null;
   importId: string | null;
   importFileName: string | null;
 };

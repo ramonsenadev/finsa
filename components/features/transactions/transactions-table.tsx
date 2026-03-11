@@ -37,6 +37,7 @@ interface TransactionsTableProps {
   transactions: TransactionRow[];
   total: number;
   totalAmount: number;
+  uncategorizedCount: number;
   page: number;
   pageSize: number;
   sortBy: string;
@@ -123,6 +124,7 @@ export function TransactionsTable({
   transactions,
   total,
   totalAmount,
+  uncategorizedCount,
   page,
   pageSize,
   sortBy,
@@ -165,11 +167,18 @@ export function TransactionsTable({
     <div className="space-y-3">
       {/* Summary bar */}
       <div className="flex items-center justify-between rounded-lg bg-background-secondary px-4 py-2.5">
-        <p className="text-sm text-foreground-secondary">
-          Mostrando{" "}
-          <span className="font-medium text-foreground">{total}</span>{" "}
-          transações
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-foreground-secondary">
+            Mostrando{" "}
+            <span className="font-medium text-foreground">{total}</span>{" "}
+            transações
+          </p>
+          {uncategorizedCount > 0 && (
+            <p className="text-sm text-foreground-secondary">
+              <span className="font-medium text-foreground">{uncategorizedCount}</span> sem categoria
+            </p>
+          )}
+        </div>
         <p className="text-sm text-foreground-secondary">
           Total:{" "}
           <span className="font-semibold text-foreground">
@@ -188,8 +197,13 @@ export function TransactionsTable({
             Nenhuma transação encontrada
           </p>
           <p className="mt-1 text-sm text-foreground-secondary">
-            Tente ajustar os filtros ou importe um CSV para começar.
+            Tente ajustar os filtros ou adicione transações.
           </p>
+          <div className="mt-4 flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <a href="/import">Importar CSV</a>
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="overflow-x-auto">

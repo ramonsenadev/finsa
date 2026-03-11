@@ -73,6 +73,7 @@ function ExportDropdown() {
 export function Header() {
   const router = useRouter();
   const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   const handleNewTransaction = useCallback(() => {
     setManualModalOpen(true);
@@ -81,6 +82,14 @@ export function Header() {
   const handleSaved = useCallback(() => {
     router.refresh();
   }, [router]);
+
+  const handleSearch = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchValue.trim()) {
+      router.push(`/transactions?search=${encodeURIComponent(searchValue.trim())}`);
+      setSearchValue("");
+      (e.target as HTMLInputElement).blur();
+    }
+  }, [router, searchValue]);
 
   useKeyboardShortcuts({
     onNewTransaction: handleNewTransaction,
@@ -101,6 +110,9 @@ export function Header() {
               data-search-input
               placeholder="Buscar transações... ( / )"
               className="pl-9"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={handleSearch}
             />
           </div>
 

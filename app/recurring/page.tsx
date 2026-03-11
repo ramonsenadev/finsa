@@ -5,9 +5,16 @@ import { DetectionReviewPanel } from "@/components/features/recurring/detection-
 
 const DEFAULT_USER_EMAIL = "ramon@finsa.local";
 
-export default async function RecurringPage() {
+interface RecurringPageProps {
+  searchParams: Promise<{ month?: string }>;
+}
+
+export default async function RecurringPage({ searchParams }: RecurringPageProps) {
+  const params = await searchParams;
+  const monthRef = params.month || undefined;
+
   const [data, candidates] = await Promise.all([
-    fetchRecurringPageData(),
+    fetchRecurringPageData(monthRef),
     fetchDetectionCandidates(),
   ]);
 

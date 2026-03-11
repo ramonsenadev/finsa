@@ -4,12 +4,9 @@ import { TransactionsContent } from "@/components/features/transactions/transact
 export default function TransactionsPage() {
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Transações</h1>
-      <p className="mt-1 text-sm text-foreground-secondary">
-        Listagem completa com filtros avançados e exportação.
-      </p>
+      <h1 className="mb-4 text-2xl font-semibold">Transações</h1>
 
-      <div className="mt-6">
+      <div>
         <Suspense
           fallback={
             <div className="space-y-4">

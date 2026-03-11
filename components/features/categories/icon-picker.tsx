@@ -5,7 +5,13 @@ import {
   ShoppingBag, Repeat, Gamepad2, Wrench, TrendingUp, CircleDot,
   Coffee, Music, Plane, Gift, Briefcase, Book, Camera, Star,
   Zap, Shield, Smartphone, Tv, Scissors, Tag, Umbrella, Wallet,
-  Dog, Flower2,
+  Dog, Flower2, Cloud, Wifi, Globe, CreditCard, Dumbbell,
+  Bike, Bus, Train, Fuel, ParkingCircle, Stethoscope, Pill,
+  Apple, ShoppingCart, Store, Sofa, Lightbulb, Droplets,
+  PawPrint, Cat, Palette, Headphones, MonitorSmartphone,
+  Laptop, HardDrive, Download, MapPin, Building2, Landmark,
+  HandCoins, PiggyBank, Receipt, FileText, Percent, Crown,
+  Gem, Wine, IceCreamCone, Popcorn, Shirt, Watch,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +47,47 @@ const ICON_MAP: Record<string, LucideIcon> = {
   wallet: Wallet,
   dog: Dog,
   "flower-2": Flower2,
+  cloud: Cloud,
+  wifi: Wifi,
+  globe: Globe,
+  "credit-card": CreditCard,
+  dumbbell: Dumbbell,
+  bike: Bike,
+  bus: Bus,
+  train: Train,
+  fuel: Fuel,
+  "parking-circle": ParkingCircle,
+  stethoscope: Stethoscope,
+  pill: Pill,
+  apple: Apple,
+  "shopping-cart": ShoppingCart,
+  store: Store,
+  sofa: Sofa,
+  lightbulb: Lightbulb,
+  droplets: Droplets,
+  "paw-print": PawPrint,
+  cat: Cat,
+  palette: Palette,
+  headphones: Headphones,
+  "monitor-smartphone": MonitorSmartphone,
+  laptop: Laptop,
+  "hard-drive": HardDrive,
+  download: Download,
+  "map-pin": MapPin,
+  "building-2": Building2,
+  landmark: Landmark,
+  "hand-coins": HandCoins,
+  "piggy-bank": PiggyBank,
+  receipt: Receipt,
+  "file-text": FileText,
+  percent: Percent,
+  crown: Crown,
+  gem: Gem,
+  wine: Wine,
+  "ice-cream-cone": IceCreamCone,
+  popcorn: Popcorn,
+  shirt: Shirt,
+  watch: Watch,
 };
 
 export function getIconComponent(name: string): LucideIcon {
@@ -63,7 +110,7 @@ interface IconPickerProps {
 
 export function IconPicker({ value, onChange, color }: IconPickerProps) {
   return (
-    <div className="grid grid-cols-6 gap-1.5">
+    <div className="grid grid-cols-8 gap-1 max-h-60 overflow-y-auto rounded-md border border-border p-2">
       {Object.entries(ICON_MAP).map(([name, Icon]) => (
         <button
           key={name}
@@ -73,11 +120,11 @@ export function IconPicker({ value, onChange, color }: IconPickerProps) {
             "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
             value === name
               ? "ring-2 ring-accent bg-accent/10"
-              : "hover:bg-background-secondary"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
           )}
         >
           <Icon
-            className="h-4 w-4"
+            className="h-4.5 w-4.5"
             style={value === name && color ? { color } : undefined}
           />
         </button>

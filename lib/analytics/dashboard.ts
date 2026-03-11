@@ -24,6 +24,17 @@ export interface TopExpense {
   isRecurring: boolean;
 }
 
+export interface CashFlowData {
+  /** Total cash outflow: card bills due this month + manual/debit transactions this month */
+  totalOutflow: number;
+  /** Sum of card bills due this month (based on card closing/due day cycles) */
+  cardBills: number;
+  /** Manual/debit transactions from the calendar month */
+  manualExpenses: number;
+  /** Cash balance: income - outflow - investments */
+  cashBalance: number;
+}
+
 export interface MonthlyDashboardData {
   monthRef: string;
   totalIncome: number;
@@ -38,6 +49,8 @@ export interface MonthlyDashboardData {
   prevTotalExpenses: number | null;
   prevTotalInvestments: number | null;
   prevFreeBalance: number | null;
+  // Cash flow (null if no cards have billing cycle configured)
+  cashFlow: CashFlowData | null;
   // Breakdowns
   categoryBreakdown: CategoryBreakdown[];
   topExpenses: TopExpense[];
@@ -59,6 +72,90 @@ function getMonthDateRange(monthRef: string) {
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
   return { start, end };
+}
+
+/**
+ * Compute cash flow for a given month.
+ *
+ * Cash flow = what actually left your bank account in this month:
+ * - Card bills due this month (based on closingDay/dueDay cycle)
+ * - Manual/debit transactions from the calendar month
+ *
+ * For a card with closingDay=15, dueDay=10:
+ * - Bill due Jan 10 = statement closed Dec 15 = purchases from Nov 16 to Dec 15
+ */
+async function computeCashFlow(
+  userId: string,
+  monthRef: string,
+  totalIncome: number,
+  totalInvestments: number
+): Promise<CashFlowData | null> {
+  const [year, month] = monthRef.split("-").map(Number);
+  const { start, end } = getMonthDateRange(monthRef);
+
+  // Get cards with billing cycle configured
+  const cards = await prisma.card.findMany({
+    where: { userId, deletedAt: null, closingDay: { not: null }, dueDay: { not: null } },
+    select: { id: true, closingDay: true, dueDay: true },
+  });
+
+  if (cards.length === 0) return null;
+
+  let cardBills = 0;
+
+  for (const card of cards) {
+    const closingDay = card.closingDay!;
+    const dueDay = card.dueDay!;
+
+    // Determine the statement closing date for the bill due this month.
+    // If dueDay > closingDay, the statement closed in the same month before the due date.
+    // If dueDay <= closingDay, the statement closed in the previous month.
+    let closingDate: Date;
+    if (dueDay > closingDay) {
+      // Closes same month as due: e.g., closes on 5th, due on 15th
+      closingDate = new Date(year, month - 1, closingDay);
+    } else {
+      // Closes previous month: e.g., closes on 15th, due on 10th next month
+      closingDate = new Date(year, month - 2, closingDay);
+    }
+
+    // Statement period: from previous closing + 1 day to this closing date
+    const prevClosingDate = new Date(closingDate);
+    prevClosingDate.setMonth(prevClosingDate.getMonth() - 1);
+    const periodStart = new Date(prevClosingDate);
+    periodStart.setDate(periodStart.getDate() + 1);
+    const periodEnd = new Date(closingDate);
+    periodEnd.setDate(periodEnd.getDate() + 1); // exclusive end
+
+    const agg = await prisma.transaction.aggregate({
+      where: {
+        userId,
+        cardId: card.id,
+        date: { gte: periodStart, lt: periodEnd },
+        ...PAYMENT_CATEGORY_FILTER,
+      },
+      _sum: { amount: true },
+    });
+
+    cardBills += toNumber(agg._sum.amount);
+  }
+
+  // Manual expenses in the calendar month
+  const manualAgg = await prisma.transaction.aggregate({
+    where: {
+      userId,
+      date: { gte: start, lt: end },
+      sourceType: "manual",
+      ...PAYMENT_CATEGORY_FILTER,
+    },
+    _sum: { amount: true },
+  });
+  const manualExpenses = toNumber(manualAgg._sum.amount);
+
+  const totalOutflow = cardBills + manualExpenses;
+  const cashBalance = totalIncome - totalOutflow - totalInvestments;
+
+  return { totalOutflow, cardBills, manualExpenses, cashBalance };
 }
 
 // Bump this whenever snapshot computation logic changes (filters, aggregation rules, etc.)
@@ -364,6 +461,14 @@ export async function getMonthlyDashboard(
   // Check if prev month has any data
   const hasPrevData = prev.totalExpenses > 0 || prev.totalIncome > 0;
 
+  // Cash flow (only if cards have billing cycles configured)
+  const cashFlow = await computeCashFlow(
+    userId,
+    monthRef,
+    current.totalIncome,
+    current.totalInvestments
+  );
+
   return {
     monthRef,
     totalIncome: current.totalIncome,
@@ -377,6 +482,7 @@ export async function getMonthlyDashboard(
     prevTotalExpenses: hasPrevData ? prev.totalExpenses : null,
     prevTotalInvestments: hasPrevData ? prev.totalInvestments : null,
     prevFreeBalance: hasPrevData ? prevFreeBalance : null,
+    cashFlow,
     categoryBreakdown,
     topExpenses,
   };

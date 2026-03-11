@@ -198,7 +198,7 @@ export async function fetchTransactionsForExport(
 export async function fetchCards() {
   const userId = await getUserId();
   const cards = await prisma.card.findMany({
-    where: { userId, isActive: true },
+    where: { userId, isActive: true, deletedAt: null },
     select: { id: true, name: true, color: true, lastFourDigits: true },
     orderBy: { name: "asc" },
   });
@@ -309,7 +309,7 @@ export async function recategorizeTransaction(
     });
 
     revalidatePaths();
-    return { success: true, count: matchingIds.length };
+    return { success: true, count: matchingIds.length, matchingIds };
   }
 
   // Apply to single transaction only (no rule change)

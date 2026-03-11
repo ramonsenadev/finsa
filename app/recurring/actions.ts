@@ -34,6 +34,7 @@ export interface RecurringExpenseRow {
   expectedAmount: number;
   dayOfMonth: number | null;
   sourceType: string;
+  effectiveFrom: string | null; // ISO date string
   detectionMethod: string;
   isActive: boolean;
 }
@@ -56,13 +57,22 @@ export interface RecurringPageData {
   currentMonth: string; // "YYYY-MM"
 }
 
+// ─── Helper to parse monthRef ────────────────────────────────────────
+
+function parseMonthRef(monthRef?: string) {
+  if (monthRef) {
+    const [y, m] = monthRef.split("-").map(Number);
+    return { year: y, month: m - 1 }; // 0-based month
+  }
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() };
+}
+
 // ─── Fetch all data for the page ───────────────────────────────────
 
-export async function fetchRecurringPageData(): Promise<RecurringPageData> {
+export async function fetchRecurringPageData(monthRef?: string): Promise<RecurringPageData> {
   const userId = await getUserId();
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0-based
+  const { year, month } = parseMonthRef(monthRef);
   const currentMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
 
   const monthStart = new Date(year, month, 1);
@@ -87,29 +97,46 @@ export async function fetchRecurringPageData(): Promise<RecurringPageData> {
   });
 
   // Fetch transactions for current month that are recurring
-  const monthTransactions = await prisma.transaction.findMany({
-    where: {
-      userId,
-      date: { gte: monthStart, lte: monthEnd },
-      isRecurring: true,
-    },
-    select: {
-      description: true,
-      categoryId: true,
-    },
-  });
+  const [monthTransactions, skippedEntries] = await Promise.all([
+    prisma.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: monthStart, lte: monthEnd },
+        isRecurring: true,
+      },
+      select: {
+        description: true,
+        categoryId: true,
+      },
+    }),
+    prisma.skippedRecurring.findMany({
+      where: { userId, monthRef: currentMonth },
+      select: { recurringId: true },
+    }),
+  ]);
 
-  // Build normalized lookup for matching
+  // Build lookup sets for matching
   const normalizedTransactions = monthTransactions.map((t) => ({
     normalizedName: t.description.toLowerCase().trim(),
     categoryId: t.categoryId,
   }));
+  const skippedIds = new Set(skippedEntries.map((s) => s.recurringId));
 
-  // Determine pending suggestions (active recurring without matching transaction)
+  // Determine pending suggestions (active recurring without matching transaction or skip)
   const activeRecurring = allRecurring.filter((r) => r.isActive);
 
   const pending: PendingSuggestion[] = [];
   for (const rec of activeRecurring) {
+    // Skip if effectiveFrom is in the future relative to the current month
+    if (rec.effectiveFrom && rec.effectiveFrom > monthEnd) {
+      continue;
+    }
+
+    // Skip if explicitly skipped for this month
+    if (skippedIds.has(rec.id)) {
+      continue;
+    }
+
     const normalizedRecName = rec.name.toLowerCase().trim();
     const hasMatch = normalizedTransactions.some(
       (t) =>
@@ -146,19 +173,19 @@ export async function fetchRecurringPageData(): Promise<RecurringPageData> {
     expectedAmount: toNumber(r.expectedAmount),
     dayOfMonth: r.dayOfMonth,
     sourceType: r.sourceType,
+    effectiveFrom: r.effectiveFrom ? r.effectiveFrom.toISOString().split("T")[0] : null,
     detectionMethod: r.detectionMethod,
     isActive: r.isActive,
   }));
 
-  // Total fixed expenses from active recurring
-  const totalFixedExpenses = activeRecurring.reduce(
-    (sum, r) => sum + toNumber(r.expectedAmount),
-    0
-  );
+  // Total fixed expenses from active recurring (only those effective by current month)
+  const totalFixedExpenses = activeRecurring
+    .filter((r) => !r.effectiveFrom || r.effectiveFrom <= monthEnd)
+    .reduce((sum, r) => sum + toNumber(r.expectedAmount), 0);
 
-  // Get total income
+  // Get total income (effective by this month)
   const incomes = await prisma.income.findMany({
-    where: { userId, effectiveFrom: { lte: now } },
+    where: { userId, effectiveFrom: { lte: monthEnd } },
   });
   const totalIncome = incomes.reduce((sum, i) => sum + toNumber(i.amount), 0);
 
@@ -175,7 +202,8 @@ export async function fetchRecurringPageData(): Promise<RecurringPageData> {
 
 export async function confirmRecurringSuggestion(
   recurringId: string,
-  amount: number
+  amount: number,
+  monthRef?: string
 ) {
   const userId = await getUserId();
 
@@ -184,9 +212,9 @@ export async function confirmRecurringSuggestion(
   });
   if (!recurring) return { error: "Recorrente não encontrado" };
 
-  const now = new Date();
-  const day = recurring.dayOfMonth ?? now.getDate();
-  const txDate = new Date(now.getFullYear(), now.getMonth(), day, 12, 0, 0);
+  const { year, month } = parseMonthRef(monthRef);
+  const day = recurring.dayOfMonth ?? 15;
+  const txDate = new Date(year, month, day, 12, 0, 0);
 
   await prisma.transaction.create({
     data: {
@@ -217,10 +245,11 @@ export async function confirmRecurringSuggestion(
 // ─── Confirm all pending suggestions ───────────────────────────────
 
 export async function confirmAllRecurringSuggestions(
-  items: { id: string; amount: number }[]
+  items: { id: string; amount: number }[],
+  monthRef?: string
 ) {
   const userId = await getUserId();
-  const now = new Date();
+  const { year, month } = parseMonthRef(monthRef);
 
   const recurringExpenses = await prisma.recurringExpense.findMany({
     where: { id: { in: items.map((i) => i.id) }, userId },
@@ -233,8 +262,8 @@ export async function confirmAllRecurringSuggestions(
       const recurring = recurringMap.get(item.id);
       if (!recurring) continue;
 
-      const day = recurring.dayOfMonth ?? now.getDate();
-      const txDate = new Date(now.getFullYear(), now.getMonth(), day, 12, 0, 0);
+      const day = recurring.dayOfMonth ?? 15;
+      const txDate = new Date(year, month, day, 12, 0, 0);
 
       await tx.transaction.create({
         data: {
@@ -264,11 +293,9 @@ export async function confirmAllRecurringSuggestions(
   return { success: true, count: items.length };
 }
 
-// ─── Skip a recurring for this month (no-op, just removes from UI) ─
+// ─── Skip a recurring for this month ─────────────────────────────
 
-export async function skipRecurringSuggestion(recurringId: string) {
-  // We create a $0 "skipped" marker transaction so the pending detection
-  // won't show it again this month
+export async function skipRecurringSuggestion(recurringId: string, monthRef?: string) {
   const userId = await getUserId();
 
   const recurring = await prisma.recurringExpense.findFirst({
@@ -276,23 +303,16 @@ export async function skipRecurringSuggestion(recurringId: string) {
   });
   if (!recurring) return { error: "Recorrente não encontrado" };
 
-  const now = new Date();
-  const day = recurring.dayOfMonth ?? now.getDate();
-  const txDate = new Date(now.getFullYear(), now.getMonth(), day, 12, 0, 0);
+  const { year, month } = parseMonthRef(monthRef);
+  const currentMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-  // Create a zero-amount transaction as marker
-  await prisma.transaction.create({
-    data: {
-      userId,
-      sourceType: "manual",
-      date: txDate,
-      description: recurring.name,
-      amount: 0,
-      categoryId: recurring.categoryId,
-      paymentMethod: recurring.sourceType,
-      isRecurring: true,
-      categorizationMethod: "manual",
+  // Create a skip marker so the pending detection won't show it again
+  await prisma.skippedRecurring.upsert({
+    where: {
+      userId_recurringId_monthRef: { userId, recurringId, monthRef: currentMonth },
     },
+    update: {},
+    create: { userId, recurringId, monthRef: currentMonth },
   });
 
   revalidateRecurringPaths();
@@ -326,6 +346,7 @@ export interface UpdateRecurringData {
   expectedAmount: number;
   dayOfMonth: number | null;
   sourceType: string;
+  effectiveFrom: string | null; // ISO date string or null
 }
 
 export async function updateRecurringExpense(
@@ -347,6 +368,7 @@ export async function updateRecurringExpense(
       expectedAmount: data.expectedAmount,
       dayOfMonth: data.dayOfMonth,
       sourceType: data.sourceType,
+      effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : null,
     },
   });
 
@@ -382,6 +404,9 @@ export async function acceptRecurringCandidate(data: {
 }) {
   const userId = await getUserId();
 
+  const now = new Date();
+  const effectiveFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+
   await prisma.recurringExpense.create({
     data: {
       userId,
@@ -392,6 +417,7 @@ export async function acceptRecurringCandidate(data: {
       dayOfMonth: data.dayOfMonth,
       detectionMethod: "auto",
       isActive: true,
+      effectiveFrom,
     },
   });
 

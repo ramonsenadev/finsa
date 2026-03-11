@@ -4,11 +4,23 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { categorySchema, type CategoryFormData } from "@/lib/validations/category";
 
+const DEFAULT_USER_EMAIL = "ramon@finsa.local";
+
+async function getUserId() {
+  const user = await prisma.user.findFirst({
+    where: { email: DEFAULT_USER_EMAIL },
+  });
+  if (!user) throw new Error("User not found");
+  return user.id;
+}
+
 export async function createCategory(data: CategoryFormData) {
   const parsed = categorySchema.safeParse(data);
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors };
   }
+
+  const userId = await getUserId();
 
   // Check unique name within same level
   const existing = await prisma.category.findFirst({
@@ -34,6 +46,7 @@ export async function createCategory(data: CategoryFormData) {
       icon: parsed.data.icon,
       color: parsed.data.color,
       parentId: parsed.data.parentId,
+      userId,
       isSystem: false,
       sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
     },

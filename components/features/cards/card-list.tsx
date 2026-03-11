@@ -5,6 +5,7 @@ import { Plus, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardItem } from "./card-item";
 import { CardFormModal } from "./card-form-modal";
+import { DeleteCardModal } from "./delete-card-modal";
 
 type CardData = {
   id: string;
@@ -12,6 +13,8 @@ type CardData = {
   issuer: string;
   lastFourDigits: string | null;
   holderName: string | null;
+  closingDay: number | null;
+  dueDay: number | null;
   isActive: boolean;
   csvFormatId: string | null;
 };
@@ -23,6 +26,8 @@ interface CardListProps {
 export function CardList({ cards }: CardListProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CardData | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingCard, setDeletingCard] = useState<CardData | null>(null);
 
   function handleNew() {
     setEditingCard(null);
@@ -32,6 +37,11 @@ export function CardList({ cards }: CardListProps) {
   function handleEdit(card: CardData) {
     setEditingCard(card);
     setModalOpen(true);
+  }
+
+  function handleDelete(card: CardData) {
+    setDeletingCard(card);
+    setDeleteModalOpen(true);
   }
 
   return (
@@ -68,7 +78,7 @@ export function CardList({ cards }: CardListProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => (
-            <CardItem key={card.id} card={card} onEdit={handleEdit} />
+            <CardItem key={card.id} card={card} onEdit={handleEdit} onDelete={handleDelete} />
           ))}
         </div>
       )}
@@ -77,6 +87,13 @@ export function CardList({ cards }: CardListProps) {
         open={modalOpen}
         onOpenChange={setModalOpen}
         editingCard={editingCard}
+      />
+
+      <DeleteCardModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        cardId={deletingCard?.id ?? null}
+        cardName={deletingCard?.name ?? null}
       />
     </div>
   );
